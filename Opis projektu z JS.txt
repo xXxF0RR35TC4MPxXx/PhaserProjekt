@@ -1,0 +1,22 @@
+    Podstawa na zaliczenie (1): sterowanie myszą lub/i klawiaturą, poruszające się obiekty, kolizje między nimi, prosta logika.
+	
+	Sterowanie będzie tylko klawiaturą. Poruszające się obiekty to statek, przeciwnicy, pociski i spadające z przeciwników bonusy. Kolizje między graczem a pociskami, graczem a bonusami i statkami a krawędziami planszy.
+	
+    (+1) Przynajmniej część obiektów jest animowana (klatki animacji).
+	Animowane jest tło planszy, tekst w menu i animowane będą sprite'y przeciwników (spoko, mam tekstury z Galagi do tego). Można dać animacje wybuchu przy trafieniu przeciwnika (bo to też jest)
+	
+	
+    (+1) Kilka typów obiektów różniących się zachowaniem (np. wrogowie, pułapki i skarby).
+	Ponownie, zrobi się kilka klas statków przeciwników które będą miały inne algorytmy działania albo po prostu inne tekstury statku i strzału. Bonusy wypadające z przeciwników będą mogły np. dać dodatkowe punkty, zwiększyć prędkość poruszania statku, zmniejszyć czas pomiędzy oddawaniem strzałów przez gracza, dać dodatkowe życie itp. Różnić się będą teksturą, rzadkością wypadania i efektem.
+	
+	
+    (+1) Bardziej złożona logika i zależności między elementami gry (np. AI wrogów, zarządzanie zasobami).
+	Tak jak pisałem wcześniej, różne typy przeciwników będą zachowywać się inaczej i można zrobić tak, że jeśli przeciwników jest dużo, to siedzą ładnie w rządku, a jak jest ich mało to zaczynają latać losowo po planszy. Ewentualnie jeśli chodzi o te "zasoby", to można dać coś w stylu broni zapasowej o ograniczonej amunicji, odpalanej pod innym przyciskiem.
+	
+	
+    (+1) Kilka typów interakcji (np. walka i dialogi).
+	Można zrobić coś w stylu sklepu co kilka poziomów, gdzie za punkty można kupić coś, co może wypaść jako bonus.
+	
+	
+    (+1) Większy świat gry (np. scrollowana plansza, poziomy, przechodzenie między ekranami pomieszczeń).
+	Można przyjąć, że po prostu jak zestrzeli się wszystkich przeciwników z planszy, to wyświetlany jest komunikat o przejściu do nowego poziomu, gdzie generować się będą następni przeciwnicy, tylko w inny sposób niż na poprzedniej planszy.

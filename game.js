@@ -139,40 +139,46 @@ class MainMenu extends Phaser.Scene
     
     preload(){
         
-        this.load.image('titleFont', 'assets/titleFont.png')
-        this.load.image('background1', 'assets/8bitbackground.png')
+        this.load.image('titleFont', 'assets/titleFont.png') //plik z teksturą napisu
+        this.load.image('background1', 'assets/8bitbackground.png') //plik z teksturą tła
     }
 
 
     create() {
-        
-        
-        const config = {
-            image: 'titleFont',
-            width: 47,
-            height: 49,
-            chars: Phaser.GameObjects.RetroFont.TEXT_SET3,
-            charsPerRow: 6,
-            spacing: { x: 1, y: 1 }
+        const fontConfig = {
+            image: 'titleFont', //nazwa fontu
+            width: 47, //szerokość pojedynczego znaku w foncie
+            height: 49, //wysokość pojedynczego znaku w foncie
+            chars: Phaser.GameObjects.RetroFont.TEXT_SET3, //określenie typu font_setu (do znalezienia w dokumentacji)
+            charsPerRow: 6, //ilość znaków w jednym rzędzie w pliku
+            spacing: { x: 1, y: 1 } // określenie odstępu między początkiem a końcem dwóch znaków
         };
-        menuBackground=this.add.tileSprite(game.config.width/2, game.config.height/2, 0, 0, 'background1');
+
+        menuBackground=this.add.tileSprite(game.config.width/2, game.config.height/2, 0, 0, 'background1'); //dodanie tła
+        
+        //wczytanie retro-fontu do ekranu startowego
         var newFont = new FontFace("PressStart2P", `url(${"assets/PressStart2P.ttf"})`);
         newFont.load().then(function (loaded) {
             document.fonts.add(loaded);
         }).catch(function (error) {
             return error;
         });
-        this.cache.bitmapFont.add('titleFont', Phaser.GameObjects.RetroFont.Parse(this, config));
 
+        //dodanie napisu z tytułem gry z tym fajnym fontem z pliku .png
+        this.cache.bitmapFont.add('titleFont', Phaser.GameObjects.RetroFont.Parse(this, fontConfig));
         const text = this.add.bitmapText(game.config.width/2, game.config.height/5, 'titleFont', 'SPACE SHOOTER').setScale(1.25);
         text.setOrigin(0.5);
+
+        //określenie przycisku startu gry
         startButton = this.input.keyboard.addKey(
             Phaser.Input.Keyboard.KeyCodes.ENTER);
         
+        //tekst mówiący, żeby wcisnąć "Enter", żeby zacząć grę. Niestety musiałem rozbić na dwa teksty, gdzie drugi z nich ma zmieniony styl. Wytłumaczenie niżej.
         pressEnterText = this.add.text(game.config.width/2, game.config.height/2, 'Press       To Play!', { font: "30px PressStart2P"}).setOrigin(0.5);;
         Enter = this.add.text(game.config.width/2, game.config.height/2, '      ENTER         ', { font: "30px PressStart2P"}).setOrigin(0.5);;
-        //purple, yellow, blue, red 
-        Enter.setTint(0xff0000)
+ 
+        Enter.setTint(0xff0000) //ustawienie koloru tekstu Enter
+        
         //w Phaser 2 można było zmienić kolor wybranych liter za pomocą prostej funkcji, ale oczywiście w Phaser 3 zabrali tą opcję...
         //pressEnterText.addColor('#ff0000', 6);
         //pressEnterText.addColor('#ffffff', 10);
