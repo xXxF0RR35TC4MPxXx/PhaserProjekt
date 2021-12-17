@@ -14,6 +14,11 @@ var timeFromTextBlink = 0;
 var textBlinkingDelta = 1000;
 var pressEnterText;
 var Enter;
+var score = 0;
+var bulletCount = 1;
+var jeden, dwa, trzy;
+
+
 //klasa pojedynczego pocisku
 class Bullet extends Phaser.Physics.Arcade.Sprite
 {
@@ -26,18 +31,39 @@ class Bullet extends Phaser.Physics.Arcade.Sprite
     {
         
         this.body.reset(x, y);
-
-        this.setActive(true);
+        this.angle =0;
+        this.setActive(true); //ustawienie pocisku na aktywny i widoczny
         this.setVisible(true);
 
         this.setVelocityY(-1000); //ustawienie prędkości lotu pocisku
+    }
+
+    fireWBok (x, y, kierunek) //strzały w bok dla strzału potrójnego
+    {
+    
+        this.body.reset(x, y);
+        this.setActive(true); //ustawienie pocisku na aktywny i widoczny
+        this.setVisible(true);
+
+        if(kierunek==0) //strzał w lewo
+        {
+            this.angle = -33; //zmiana kąta nachylenia sprite'a o 33 stopnie w lewo
+            this.setVelocityY(-1000); //ustawienie prędkości lotu pocisku w pionie
+            this.setVelocityX(-550); //ustawienie prędkości lotu pocisku w poziomie
+        }
+        if(kierunek==1) //strzał w prawo
+        {
+            this.angle = 33; //zmiana kąta nachylenia sprite'a o 33 stopnie w prawo
+            this.setVelocityY(-1000); //ustawienie prędkości lotu pocisku w pionie
+            this.setVelocityX(+550); //ustawienie prędkości lotu pocisku w poziomie
+        }
     }
 
     preUpdate (time, delta)
     {
         super.preUpdate(time, delta);
 
-        if (this.y <= -32)
+        if (this.y <= -32) //kiedy pocisk wyleci poza planszę to ustaw na niewidoczny i nieaktywny
         {
             this.setActive(false);
             this.setVisible(false);
@@ -52,7 +78,7 @@ class Bullets extends Phaser.Physics.Arcade.Group
         super(scene.physics.world, scene);
 
         this.createMultiple({
-            frameQuantity: 5,
+            frameQuantity: 99,
             key: 'bullet',
             active: false,
             visible: false,
@@ -63,14 +89,48 @@ class Bullets extends Phaser.Physics.Arcade.Group
 
     fireBullet (x, y)
     {
-        //console.log('szczelom')
         timeFromLastShot = 0; //czas od ostatniego strzału = 0
-        let bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
 
-        if (bullet) //jeśli taki istnieje
-        {
-            bullet.fire(x, y); //to go wystrzel w określonym miejscu
+        //jeżeli gracz ma pojedynczy laser
+        if(bulletCount == 1){
+            let bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
+            if (bullet) //jeśli taki istnieje
+            {
+                bullet.fire(x, y); //to go wystrzel w określonym miejscu
+            }}
+
+        //jeżeli gracz ma podwójny laser
+        if(bulletCount == 2){
+            let bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
+            if (bullet) //jeśli taki istnieje
+            {
+                bullet.fire(x-20, y); //to go wystrzel w określonym miejscu
+            }
+            bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
+            if (bullet) //jeśli taki istnieje
+            {
+                bullet.fire(x+20, y); //to go wystrzel w określonym miejscu
+            }
         }
+
+        //jeżeli gracz ma potrójny laser
+        if(bulletCount == 3){
+            let bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
+            if (bullet) //jeśli taki istnieje
+            {
+                bullet.fire(x, y); //to go wystrzel w określonym miejscu
+            }
+            bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
+            if (bullet) //jeśli taki istnieje
+            {
+                bullet.fireWBok(x+20, y, 1); //to go wystrzel w określonym miejscu
+            }
+            bullet = this.getFirstDead(false);
+            if (bullet) //jeśli taki istnieje
+            {
+                bullet.fireWBok(x-20, y, 0); //to go wystrzel w określonym miejscu
+            }
+        }    
     }
 }
 
@@ -91,20 +151,25 @@ class GamePlay extends Phaser.Scene
         this.load.image('background2', 'assets/8bitbackground2.png')
         this.load.image('alien1', 'assets/alien1.png')
         this.load.image('playerBullet', 'assets/playerBullet.png')
+        //this.load.image('playerBulletWBok', 'assets/playerBulletWBok.png')
         this.load.image('enemyBullet', 'assets/enemyBullet.png')
         this.load.image('playerShip', 'assets/ship.png')
         //this.load.spritesheet()
     }
 
     create() {
+        //dodanie sprite'ów tła i statków
         background=this.add.tileSprite(config.width/2, config.height/2, 0, 0, 'background1');
         stars2 = this.add.tileSprite(config.width/2, config.height/2, 0, 0, 'background2').setScale(0.75)
         ship = this.physics.add.sprite(config.width/2, config.height/1.1, 'playerShip').setOrigin(0.5, 0.5).setScale(0.8);
         
+        //przypisanie przycisków
         cursors = this.input.keyboard.createCursorKeys();
-        fireButton = this.input.keyboard.addKey(
-            Phaser.Input.Keyboard.KeyCodes.SPACE);
-    
+        fireButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        jeden = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
+        dwa = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
+        trzy = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
+
         this.bullets = new Bullets(this);
     }
     
@@ -119,8 +184,16 @@ class GamePlay extends Phaser.Scene
         }else if(cursors.right.isDown){
             ship.body.velocity.x = shipVelocity;
         }
+        
+
+        //DEBUG DO TESTOWANIA POCISKÓW
+
+        //if(jeden.isDown){bulletCount=1}
+        //if(dwa.isDown){bulletCount=2}
+        //if(trzy.isDown){bulletCount=3}
         //console.log("timeFromLastShot = " + timeFromLastShot)
         //console.log("shotDelta = " + shotDelta)
+
         if (fireButton.isDown && timeFromLastShot >= shotDelta && canShoot) {
             this.bullets.fireBullet(ship.x, ship.y*0.95);
             canShoot = false;
