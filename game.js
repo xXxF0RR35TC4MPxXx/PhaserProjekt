@@ -9,16 +9,19 @@ var timeFromLastShot=0; //czas od ostatniego strzału
 var shotDelta = 100; //różnica czasowa między strzałami
 var canShoot = true; //zmienna po to, żeby jedno kliknięcie strzelało tylko jeden raz, a nie full
 var startButton; //przycisk startu gry
-var canStartGame = true;
-var timeFromTextBlink = 0;
-var textBlinkingDelta = 1000;
-var pressEnterText;
-var Enter;
-var score = 0;
-var bulletCount = 1;
-var jeden, dwa, trzy;
-
-
+var canStartGame = true; //czy można zacząć grę
+var timeFromTextBlink = 0; //czas od ostatniego "mrygnięcia" tekstu na ekranie startowym
+var textBlinkingDelta = 1000; //co jaki czas ma mrygać tekst na ekranie startowym
+var pressEnterText; //mrygający tekst na ekranie startowym
+var Enter; //Enter na klawiaturze
+var score = 0; //wynik gracza
+var lives = 2; //ilość żyć gracza
+var level = 1; //numer planszy
+var playerLaserType = 1; //typ lasera gracza
+var jeden, dwa, trzy; //tylko do debugowania, zmiana typu lasera pod przyciskami '1', '2', '3' na klawiaturze.
+var enemies
+var bullets
+var scoreText 
 //klasa pojedynczego pocisku
 class Bullet extends Phaser.Physics.Arcade.Sprite
 {
@@ -29,14 +32,14 @@ class Bullet extends Phaser.Physics.Arcade.Sprite
 
     fire (x, y)
     {
-        
-        this.body.reset(x, y);
-        this.angle =0;
         this.setActive(true); //ustawienie pocisku na aktywny i widoczny
         this.setVisible(true);
-
+        this.body.reset(x, y);
+        this.body.setEnable(true)
         this.setVelocityY(-1000); //ustawienie prędkości lotu pocisku
+        this.angle =0;
     }
+    
 
     fireWBok (x, y, kierunek) //strzały w bok dla strzału potrójnego
     {
@@ -92,7 +95,7 @@ class Bullets extends Phaser.Physics.Arcade.Group
         timeFromLastShot = 0; //czas od ostatniego strzału = 0
 
         //jeżeli gracz ma pojedynczy laser
-        if(bulletCount == 1){
+        if(playerLaserType == 1){
             let bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
             if (bullet) //jeśli taki istnieje
             {
@@ -100,7 +103,7 @@ class Bullets extends Phaser.Physics.Arcade.Group
             }}
 
         //jeżeli gracz ma podwójny laser
-        if(bulletCount == 2){
+        if(playerLaserType == 2){
             let bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
             if (bullet) //jeśli taki istnieje
             {
@@ -114,7 +117,7 @@ class Bullets extends Phaser.Physics.Arcade.Group
         }
 
         //jeżeli gracz ma potrójny laser
-        if(bulletCount == 3){
+        if(playerLaserType == 3){
             let bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
             if (bullet) //jeśli taki istnieje
             {
@@ -145,24 +148,108 @@ class GamePlay extends Phaser.Scene
         this.ship;
     }
 
+    //wczytanie tekstur
     preload(){
         console.log("GamePlay preload()")
-        this.load.image('background1', 'assets/8bitbackground.png')
-        this.load.image('background2', 'assets/8bitbackground2.png')
-        this.load.image('alien1', 'assets/alien1.png')
-        this.load.image('playerBullet', 'assets/playerBullet.png')
-        //this.load.image('playerBulletWBok', 'assets/playerBulletWBok.png')
-        this.load.image('enemyBullet', 'assets/enemyBullet.png')
-        this.load.image('playerShip', 'assets/ship.png')
-        //this.load.spritesheet()
+        this.load.image('background1', 'assets/8bitbackground.png')     //plik z teksturą tła pod spodem
+        this.load.image('background2', 'assets/8bitbackground2.png')    //plik z teksturą tła na wierzchu (dwa tła dla efektu paralaksy)
+        this.load.image('alien1', 'assets/alien1.png')                  //plik z teksturą statku przeciwnika
+        this.load.image('alien2', 'assets/alien2.png')                  //plik z teksturą statku przeciwnika
+        this.load.image('alien3', 'assets/alien3.png')                  //plik z teksturą statku przeciwnika
+        this.load.image('alien4', 'assets/alien4.png')                  //plik z teksturą statku przeciwnika
+        this.load.image('playerBullet', 'assets/playerBullet.png')      //plik z teksturą pocisku przeciwnika
+        this.load.image('enemyBullet', 'assets/enemyBullet.png')        //plik z teksturą pocisku przeciwnika
+        this.load.image('playerShip', 'assets/ship.png')                //plik z teksturą statku gracza
+        this.load.image('heartFont', 'assets/heartFont.png')            //plik z teksturą napisu z życiami (serduszka jako font)
+        //this.load.spritesheet() <- spritesheet dla elementów animowanych
     }
 
     create() {
+
+        enemies = null;
         //dodanie sprite'ów tła i statków
         background=this.add.tileSprite(config.width/2, config.height/2, 0, 0, 'background1');
         stars2 = this.add.tileSprite(config.width/2, config.height/2, 0, 0, 'background2').setScale(0.75)
         ship = this.physics.add.sprite(config.width/2, config.height/1.1, 'playerShip').setOrigin(0.5, 0.5).setScale(0.8);
         
+        
+        var newFont = new FontFace("PressStart2P", `url(${"assets/PressStart2P.ttf"})`);
+        newFont.load().then(function (loaded) {
+            document.fonts.add(loaded);
+        }).catch(function (error) {
+            return error;
+        });
+        
+        //tekst wyniku
+        scoreText = this.add.text(config.width/2, config.height*0.025, '', { font: '24px PressStart2P', fill: '#ffffff' });
+        scoreText.setOrigin(0.5);
+        scoreText.setText('Score: ' + score);
+
+        //tekst z numerem poziomu
+        var levelText = this.add.text(config.width*0.005, config.height*0.965, '', { font: '24px PressStart2P', fill: '#00ff00' });
+        levelText.setOrigin(0);
+        levelText.setText('LVL: ' + level);
+
+        //wczytanie fontu z serduszkami
+        const heartFontConfig = {
+            image: 'heartFont', //nazwa fontu
+            width: 73, //szerokość pojedynczego znaku w foncie
+            height: 13, //wysokość pojedynczego znaku w foncie
+            chars: Phaser.GameObjects.RetroFont.TEXT_SET12,
+            charsPerRow: 1, //ilość znaków w jednym rzędzie w pliku
+            spacing: {y: 1 } // określenie odstępu między początkiem a końcem dwóch znaków
+        };
+
+        //wypisanie ilości żyć na ekran
+        this.cache.bitmapFont.add('heartFont', Phaser.GameObjects.RetroFont.Parse(this, heartFontConfig));
+        var livesText2 = this.add.bitmapText(config.width*0.995, config.height*0.995, 'heartFont', lives).setScale(2.25);
+        livesText2.setOrigin(1);
+
+
+
+        //ALIEN
+        if(level%4==1)
+        {
+        enemies = this.physics.add.staticGroup({
+            key: 'alien1', quantity: 25,
+            gridAlign: { width: 7, height: 4,
+            cellWidth: 110, cellHeight: 100,
+            x: 140, y: 140,
+            }
+            });
+            
+        }
+        
+        if(level%4==2)
+        {
+        enemies = this.physics.add.staticGroup({
+            key: 'alien2', quantity: 28,
+            gridAlign: { width: 7, height: 4,
+                cellWidth: 110, cellHeight: 100,
+                x: 140, y: 140,
+            }
+            });
+        }
+        if(level%4==3)
+        {
+        enemies = this.physics.add.staticGroup({
+            key: 'alien3', quantity: 28,
+            gridAlign: { width: 7, height: 4,
+                cellWidth: 100, cellHeight: 100,
+                x: 140, y: 140,
+            }
+            });
+        }
+        if(level%4==0)
+        {
+        enemies = this.physics.add.staticGroup({
+            key: 'alien4', quantity: 28,
+            gridAlign: { width: 7, height: 4,
+                cellWidth: 100, cellHeight: 100,
+                x: 140, y: 140,
+            }
+            });
+        }
         //przypisanie przycisków
         cursors = this.input.keyboard.createCursorKeys();
         fireButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -170,38 +257,60 @@ class GamePlay extends Phaser.Scene
         dwa = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
         trzy = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
 
-        this.bullets = new Bullets(this);
+        bullets = new Bullets(this);
+        // game.debugShowBody(bullets)
+        // game.debugShowBody(enemies)
+        this.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
     }
-    
-    
+
     update(time, delta) {
         timeFromLastShot += delta;
+
+        if(enemies.countActive() == 0)
+        {
+            level++;
+            this.scene.restart();
+        }
         background.tilePositionY -= 0.1;
         stars2.tilePositionY -= 0.4;
         ship.body.velocity.x=0;
-        if(cursors.left.isDown){
+
+        if(cursors.left.isDown && ship.body.x >= 0){
             ship.body.velocity.x = -shipVelocity;
-        }else if(cursors.right.isDown){
+        }else if(cursors.right.isDown && ship.body.x < config.width-ship.body.width){
             ship.body.velocity.x = shipVelocity;
         }
         
 
         //DEBUG DO TESTOWANIA POCISKÓW
 
-        //if(jeden.isDown){bulletCount=1}
-        //if(dwa.isDown){bulletCount=2}
-        //if(trzy.isDown){bulletCount=3}
+        //if(jeden.isDown){playerLaserType=1}
+        //if(dwa.isDown){playerLaserType=2}
+        //if(trzy.isDown){playerLaserType=3}
         //console.log("timeFromLastShot = " + timeFromLastShot)
         //console.log("shotDelta = " + shotDelta)
 
         if (fireButton.isDown && timeFromLastShot >= shotDelta && canShoot) {
-            this.bullets.fireBullet(ship.x, ship.y*0.95);
+            bullets.fireBullet(ship.x, ship.y*0.95);
             canShoot = false;
         }
         if(!fireButton.isDown){ canShoot = true}
     }
-}
 
+}
+function bulletHitsEnemy(bullet, enemy) {
+    
+    bullets.killAndHide(bullet)
+    bullet.body.setEnable(false)
+    
+    
+    enemy.body.enable = false;
+    enemies.killAndHide(enemy)
+    
+    //  Increase the score
+    score += 20;
+    scoreText.setText('Score: ' + score);
+    }
 //scena głównego menu
 class MainMenu extends Phaser.Scene 
 {
@@ -279,6 +388,7 @@ var config = {
     height: 900,
     physics: {
         default: 'arcade',
+        arcade:{debug: true}
         },
     backgroundColor: "48a",
     pixelArt: true,
