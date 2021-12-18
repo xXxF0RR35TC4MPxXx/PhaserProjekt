@@ -249,17 +249,29 @@ class GamePlay extends Phaser.Scene
         this.load.image('extraLife', 'assets/ExtraLifePowerup.png')             //plik z teksturą powerupa extraLife
 
         this.load.image('heartFont', 'assets/heartFont.png')                    //plik z teksturą napisu z życiami (serduszka jako font)
+        
+        this.load.spritesheet('exploooosion', 'assets/explosion.png', {
+            frameWidth: 34,
+            frameHeight: 34
+        });
         //this.load.spritesheet() <- spritesheet dla elementów animowanych
     }
 
     create() {
-
+        this.add.image(0, 0, 'exploooosion', '__BASE').setOrigin(0, 0);
         enemies = null;
         //dodanie sprite'ów tła i statków
         background=this.add.tileSprite(config.width/2, config.height/2, 0, 0, 'background1');
         stars2 = this.add.tileSprite(config.width/2, config.height/2, 0, 0, 'background2').setScale(0.75)
         ship = this.physics.add.sprite(config.width/2, config.height/1.1, 'playerShip').setOrigin(0.5, 0.5).setScale(0.8);
         
+        this.anims.create({ 
+            key: 'kill',
+            frames: this.anims.generateFrameNumbers(
+            'exploooosion', { frames: [ 0, 1, 2, 3, 4, 5] }),
+            frameRate: 10, 
+            repeat: 0
+        });
         
         var newFont = new FontFace("PressStart2P", `url(${"assets/PressStart2P.ttf"})`);
         newFont.load().then(function (loaded) {
@@ -418,6 +430,8 @@ function shipCollectsBonus(ship, bonus){
 
 function bulletHitsEnemy(bullet, enemy) {
     
+    const temp=this.add.sprite(enemy.x, enemy.y)
+    temp.anims.play('kill');
     bullets.killAndHide(bullet)
     bullet.body.setEnable(false)
     
@@ -538,7 +552,7 @@ var config = {
     height: 900,
     physics: {
         default: 'arcade',
-        arcade:{debug: true}
+        arcade:{debug: false}
         },
     backgroundColor: "48a",
     pixelArt: true,
