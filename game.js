@@ -17,11 +17,12 @@ var Enter; //Enter na klawiaturze
 var score = 0; //wynik gracza
 var lives = 2; //ilość żyć gracza
 var level = 1; //numer planszy
-var playerLaserType = 1; //typ lasera gracza
+var playerLaserType = 3; //typ lasera gracza
 var jeden, dwa, trzy; //tylko do debugowania, zmiana typu lasera pod przyciskami '1', '2', '3' na klawiaturze.
 var enemies
 var bullets
 var scoreText 
+var bonusses
 //klasa pojedynczego pocisku
 class Bullet extends Phaser.Physics.Arcade.Sprite
 {
@@ -47,7 +48,7 @@ class Bullet extends Phaser.Physics.Arcade.Sprite
         this.body.reset(x, y);
         this.setActive(true); //ustawienie pocisku na aktywny i widoczny
         this.setVisible(true);
-
+        this.body.setEnable(true)
         if(kierunek==0) //strzał w lewo
         {
             this.angle = -33; //zmiana kąta nachylenia sprite'a o 33 stopnie w lewo
@@ -137,6 +138,83 @@ class Bullets extends Phaser.Physics.Arcade.Group
     }
 }
 
+class Bonusses extends Phaser.Physics.Arcade.Group{
+    constructor (scene)
+    {
+        super(scene.physics.world, scene);
+        this.createMultiple({
+            frameQuantity: 15,
+            key: 'bonus',
+            active: false,
+            visible: false,
+            classType: Bonus
+        });
+    }
+    dropBonus (x, y, type)
+    {
+        
+        let bonus = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
+        
+        if (bonus) //jeśli taki istnieje
+        {
+            
+            bonus.type = type;
+            if(bonus.type==1){
+                bonus.setTexture('singleLaserPowerUp')
+            }
+            if(bonus.type==2){
+                bonus.setTexture('doubleLaserPowerUp')
+            }
+            if(bonus.type==3){
+                bonus.setTexture('tripleLaserPowerUp')
+            }
+            if(bonus.type==4){
+                bonus.setTexture('extraAmmo')
+                console.log("Zebrano extraAmmo")
+            }
+            if(bonus.type==5){
+                bonus.setTexture('extraSpeed')
+                console.log("Zebrano extraSpeed")
+            }
+            if(bonus.type==6){
+                bonus.setTexture('extraLife')
+            }
+            bonus.drop(x, y); //to go wystrzel w określonym miejscu
+        }  
+    }
+}
+
+class Bonus extends Phaser.Physics.Arcade.Sprite
+{
+    constructor (scene, x, y)
+    {
+            super(scene, x, y, 'singleLaserPowerUp');
+    }
+
+    drop(x, y)
+    {
+        this.setActive(true); //ustawienie pocisku na aktywny i widoczny
+        this.setVisible(true);
+        this.body.reset(x, y);
+        this.body.setEnable(true)
+        this.setVelocityY(100); //ustawienie prędkości lotu pocisku
+        this.angle =0;
+    }
+    
+    preUpdate (time, delta)
+    {
+        super.preUpdate(time, delta);
+
+        if (this.y >= 932) //kiedy pocisk wyleci poza planszę to ustaw na niewidoczny i nieaktywny
+        {
+            this.setActive(false);
+            this.setVisible(false);
+        }
+    }
+}
+
+var livesText2
+var powerup
 //scena rozgrywki
 class GamePlay extends Phaser.Scene 
 {
@@ -150,17 +228,27 @@ class GamePlay extends Phaser.Scene
 
     //wczytanie tekstur
     preload(){
-        console.log("GamePlay preload()")
-        this.load.image('background1', 'assets/8bitbackground.png')     //plik z teksturą tła pod spodem
-        this.load.image('background2', 'assets/8bitbackground2.png')    //plik z teksturą tła na wierzchu (dwa tła dla efektu paralaksy)
-        this.load.image('alien1', 'assets/alien1.png')                  //plik z teksturą statku przeciwnika
-        this.load.image('alien2', 'assets/alien2.png')                  //plik z teksturą statku przeciwnika
-        this.load.image('alien3', 'assets/alien3.png')                  //plik z teksturą statku przeciwnika
-        this.load.image('alien4', 'assets/alien4.png')                  //plik z teksturą statku przeciwnika
-        this.load.image('playerBullet', 'assets/playerBullet.png')      //plik z teksturą pocisku przeciwnika
-        this.load.image('enemyBullet', 'assets/enemyBullet.png')        //plik z teksturą pocisku przeciwnika
-        this.load.image('playerShip', 'assets/ship.png')                //plik z teksturą statku gracza
-        this.load.image('heartFont', 'assets/heartFont.png')            //plik z teksturą napisu z życiami (serduszka jako font)
+        //console.log("GamePlay preload()")
+        this.load.image('background1', 'assets/8bitbackground.png')             //plik z teksturą tła pod spodem
+        this.load.image('background2', 'assets/8bitbackground2.png')            //plik z teksturą tła na wierzchu (dwa tła dla efektu paralaksy)
+
+        this.load.image('alien1', 'assets/alien1.png')                          //plik z teksturą statku przeciwnika
+        this.load.image('alien2', 'assets/alien2.png')                          //plik z teksturą statku przeciwnika
+        this.load.image('alien3', 'assets/alien3.png')                          //plik z teksturą statku przeciwnika
+        this.load.image('alien4', 'assets/alien4.png')                          //plik z teksturą statku przeciwnika
+
+        this.load.image('playerBullet', 'assets/playerBullet.png')              //plik z teksturą pocisku gracza
+        this.load.image('enemyBullet', 'assets/enemyBullet.png')                //plik z teksturą pocisku przeciwnika
+        this.load.image('playerShip', 'assets/ship.png')                        //plik z teksturą statku gracza
+
+        this.load.image('singleLaserPowerUp', 'assets/singleLaserPowerup.png')  //plik z teksturą powerupa z 1 laserem
+        this.load.image('doubleLaserPowerUp', 'assets/doubleLaserPowerup.png')  //plik z teksturą powerupa z 2 laserami
+        this.load.image('tripleLaserPowerUp', 'assets/tripleLaserPowerup.png')  //plik z teksturą powerupa z 3 laserami
+        this.load.image('extraAmmo', 'assets/MoreBulletsPowerup.png')           //plik z teksturą powerupa extraAmmo
+        this.load.image('extraSpeed', 'assets/ExtraSpeedPowerUp.png')           //plik z teksturą powerupa extraSpeed
+        this.load.image('extraLife', 'assets/ExtraLifePowerup.png')             //plik z teksturą powerupa extraLife
+
+        this.load.image('heartFont', 'assets/heartFont.png')                    //plik z teksturą napisu z życiami (serduszka jako font)
         //this.load.spritesheet() <- spritesheet dla elementów animowanych
     }
 
@@ -202,7 +290,7 @@ class GamePlay extends Phaser.Scene
 
         //wypisanie ilości żyć na ekran
         this.cache.bitmapFont.add('heartFont', Phaser.GameObjects.RetroFont.Parse(this, heartFontConfig));
-        var livesText2 = this.add.bitmapText(config.width*0.995, config.height*0.995, 'heartFont', lives).setScale(2.25);
+        livesText2 = this.add.bitmapText(config.width*0.995, config.height*0.995, 'heartFont', lives).setScale(2.25);
         livesText2.setOrigin(1);
 
 
@@ -258,9 +346,11 @@ class GamePlay extends Phaser.Scene
         trzy = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
 
         bullets = new Bullets(this);
+        bonusses = new Bonusses(this);
         // game.debugShowBody(bullets)
         // game.debugShowBody(enemies)
         this.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
+        this.physics.add.overlap(ship, bonusses, shipCollectsBonus, null, this);
     }
 
     update(time, delta) {
@@ -298,19 +388,79 @@ class GamePlay extends Phaser.Scene
     }
 
 }
+var randomDrop;
+function shipCollectsBonus(ship, bonus){
+
+    if(bonus.type==1){
+        playerLaserType = 1;
+    }
+    if(bonus.type==2){
+        playerLaserType = 2;
+    }
+    if(bonus.type==3){
+        playerLaserType = 3;
+    }
+    if(bonus.type==4){
+        console.log("Zebrano extraAmmo")
+    }
+    if(bonus.type==5){
+        console.log("Zebrano extraSpeed")
+    }
+    if(bonus.type==6){
+        if(lives<5) 
+            lives++;
+        livesText2.setText(lives);
+    }
+    bonusses.killAndHide(bonus)
+    bonus.body.setEnable(false);
+}
+
+
 function bulletHitsEnemy(bullet, enemy) {
     
     bullets.killAndHide(bullet)
     bullet.body.setEnable(false)
     
-    
+    let tempX, tempY;
+    tempX = enemy.x
+    tempY = enemy.y
+
     enemy.body.enable = false;
     enemies.killAndHide(enemy)
     
     //  Increase the score
     score += 20;
     scoreText.setText('Score: ' + score);
+    
+    randomDrop = Math.random() * 100;
+    if(randomDrop < 2){ //ustawiam ~1% szans na drop bonusu z przeciwnika
+        
+        randomDrop = Math.ceil(Math.random() * 6)
+        if(randomDrop==1)
+        {console.log("Tutaj dropnij pojedyczny laser w miejscu: " + tempX + " " + tempY)
+        bonusses.dropBonus(tempX, tempY, 1)}
+
+        if(randomDrop==2)
+        {console.log("Tutaj dropnij podwójny laser w miejscu: " + tempX + " " + tempY)
+        bonusses.dropBonus(tempX, tempY, 2)}
+
+        if(randomDrop==3)
+        {console.log("Tutaj dropnij potrójny laser w miejscu: " + tempX + " " + tempY)
+        bonusses.dropBonus(tempX, tempY, 3)}
+
+        if(randomDrop==4)
+        {console.log("Tutaj dropnij extra ammo w miejscu: " + tempX + " " + tempY)
+        bonusses.dropBonus(tempX, tempY, 4)}
+
+        if(randomDrop==5)
+        {console.log("Tutaj dropnij extra speed w miejscu: " + tempX + " " + tempY)
+        bonusses.dropBonus(tempX, tempY, 5)}
+
+        if(randomDrop==6)
+        {console.log("Tutaj dropnij extra life w miejscu: " + tempX + " " + tempY)
+        bonusses.dropBonus(tempX, tempY, 6)}
     }
+}
 //scena głównego menu
 class MainMenu extends Phaser.Scene 
 {
