@@ -232,11 +232,6 @@ class GamePlay extends Phaser.Scene
         this.load.image('background1', 'assets/8bitbackground.png')             //plik z teksturą tła pod spodem
         this.load.image('background2', 'assets/8bitbackground2.png')            //plik z teksturą tła na wierzchu (dwa tła dla efektu paralaksy)
 
-        this.load.image('alien1', 'assets/alien1.png')                          //plik z teksturą statku przeciwnika
-        this.load.image('alien2', 'assets/alien2.png')                          //plik z teksturą statku przeciwnika
-        this.load.image('alien3', 'assets/alien3.png')                          //plik z teksturą statku przeciwnika
-        this.load.image('alien4', 'assets/alien4.png')                          //plik z teksturą statku przeciwnika
-
         this.load.image('playerBullet', 'assets/playerBullet.png')              //plik z teksturą pocisku gracza
         this.load.image('enemyBullet', 'assets/enemyBullet.png')                //plik z teksturą pocisku przeciwnika
         this.load.image('playerShip', 'assets/ship.png')                        //plik z teksturą statku gracza
@@ -250,7 +245,28 @@ class GamePlay extends Phaser.Scene
 
         this.load.image('heartFont', 'assets/heartFont.png')                    //plik z teksturą napisu z życiami (serduszka jako font)
         
+        this.load.spritesheet('alien1png', 'assets/alien1xd.png', {
+            frameWidth: 49,
+            frameHeight: 42,
+        });
+        this.load.spritesheet('alien2png', 'assets/alien2xd.png', {
+            frameWidth: 49,
+            frameHeight: 42,
+        });
+        this.load.spritesheet('alien3png', 'assets/alien3xd.png', {
+            frameWidth: 49,
+            frameHeight: 42,
+        });
+        this.load.spritesheet('alien4png', 'assets/alien4xd.png', {
+            frameWidth: 49,
+            frameHeight: 42,
+        });
         this.load.spritesheet('exploooosion', 'assets/explosion.png', {
+            frameWidth: 34,
+            frameHeight: 34,
+        });
+
+        this.load.spritesheet('playerExplosion', 'assets/playerExplosion.png', {
             frameWidth: 34,
             frameHeight: 34
         });
@@ -258,7 +274,6 @@ class GamePlay extends Phaser.Scene
     }
 
     create() {
-        this.add.image(0, 0, 'exploooosion', '__BASE').setOrigin(0, 0);
         enemies = null;
         //dodanie sprite'ów tła i statków
         background=this.add.tileSprite(config.width/2, config.height/2, 0, 0, 'background1');
@@ -270,9 +285,48 @@ class GamePlay extends Phaser.Scene
             frames: this.anims.generateFrameNumbers(
             'exploooosion', { frames: [ 0, 1, 2, 3, 4, 5] }),
             frameRate: 10, 
-            repeat: 0
+            repeat: 0,
         });
         
+        this.anims.create({ 
+            key: 'playerKill',
+            frames: this.anims.generateFrameNumbers(
+            'playerExplosion', { frames: [ 0, 1, 2, 3, 4] }),
+            frameRate: 8, 
+            repeat: 0
+        });
+
+        this.anims.create({ 
+            key: 'alien1anim',
+            frames: this.anims.generateFrameNumbers(
+            'alien1png', { frames: [ 0, 1] }),
+            frameRate: 0.75, 
+            repeat: -1
+        });
+        this.anims.create({ 
+            key: 'alien2anim',
+            frames: this.anims.generateFrameNumbers(
+            'alien2png', { frames: [ 0, 1] }),
+            frameRate: 0.75, 
+            repeat: -1
+        });
+        this.anims.create({ 
+            key: 'alien3anim',
+            frames: this.anims.generateFrameNumbers(
+            'alien3png', { frames: [ 0, 1] }),
+            frameRate: 0.75, 
+            repeat: -1
+        });
+        this.anims.create({ 
+            key: 'alien4anim',
+            frames: this.anims.generateFrameNumbers(
+            'alien4png', { frames: [ 0, 1] }),
+            frameRate: 0.75, 
+            repeat: -1
+        });
+        //na razie nie ma implementacji trafienia gracza przez pocisk, ale jak będzie
+        //to odpalić tą animację w momencie trafienia
+
         var newFont = new FontFace("PressStart2P", `url(${"assets/PressStart2P.ttf"})`);
         newFont.load().then(function (loaded) {
             document.fonts.add(loaded);
@@ -311,44 +365,56 @@ class GamePlay extends Phaser.Scene
         if(level%4==1)
         {
         enemies = this.physics.add.staticGroup({
-            key: 'alien1', quantity: 25,
+            key: 'alien1png', quantity: 28,
             gridAlign: { width: 7, height: 4,
             cellWidth: 110, cellHeight: 100,
             x: 140, y: 140,
             }
             });
-            
+            enemies.children.iterate(alien => {
+                alien.anims.play('alien1anim')
+              })
         }
+
         
         if(level%4==2)
         {
         enemies = this.physics.add.staticGroup({
-            key: 'alien2', quantity: 28,
+            key: 'alien2png', quantity: 28,
             gridAlign: { width: 7, height: 4,
                 cellWidth: 110, cellHeight: 100,
                 x: 140, y: 140,
             }
             });
+            enemies.children.iterate(alien => {
+                alien.anims.play('alien2anim')
+              })
         }
         if(level%4==3)
         {
         enemies = this.physics.add.staticGroup({
-            key: 'alien3', quantity: 28,
+            key: 'alien3png', quantity: 28,
             gridAlign: { width: 7, height: 4,
                 cellWidth: 100, cellHeight: 100,
                 x: 140, y: 140,
             }
             });
+            enemies.children.iterate(alien => {
+                alien.anims.play('alien3anim')
+              })
         }
         if(level%4==0)
         {
         enemies = this.physics.add.staticGroup({
-            key: 'alien4', quantity: 28,
+            key: 'alien4png', quantity: 28,
             gridAlign: { width: 7, height: 4,
                 cellWidth: 100, cellHeight: 100,
                 x: 140, y: 140,
             }
             });
+            enemies.children.iterate(alien => {
+                alien.anims.play('alien4anim')
+              })
         }
         //przypisanie przycisków
         cursors = this.input.keyboard.createCursorKeys();
