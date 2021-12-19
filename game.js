@@ -3,11 +3,16 @@ var Enter;                                      //tekst "Enter" w menu
 var pressEnterText;                             //tekst "Press       to play" w menu
 var timeFromTextBlink = 0;                      //czas od ostatniego "mrygnięcia" tekstu na ekranie startowym
 var textBlinkingDelta = 1000;                   //co jaki czas ma mrygać tekst na ekranie startowym
+var timeFromTextBlink2 = 0;                   //co jaki czas ma mrygać tekst na ekranie startowym
 var canStartGame = true;                        //czy można zacząć grę
+var isGamePaused = false;
+var pauseTimer = 0;
+var canPause = true;
 
 
 //input
 var startButton;                                //przycisk startu gry (tu ENTER)
+var pauseButton;                                //przycisk startu gry (tu ENTER)
 var cursors;                                    //strzałki na klawiaturze (potrzebne do inputa)
 var fireButton;                                 //przycisk odpowiedzialny za strzał (tu SPACJA)
 var powerShotButton                             //przycisk aktywacji broni specjalnej (tu lewy CTRL)
@@ -16,11 +21,12 @@ var powerShotButton                             //przycisk aktywacji broni specj
 //obiekty gry / tekstury / teksty
 var ship;                                       //statek gracza (sprite)
 var background;                                 //tło planszy (to pod spodem)
+var pauseBackground;                                 //tło planszy (to pod spodem)
 var menuBackground;
 var stars2;                                     //tło planszy (gwiazdy na wierzchu, te szybciej latające)
 var scoreText                                   //tekst przechowujący ilość punktów
 var livesText2
-
+var pauseSceneText
 
 //wartości zmiennych statku gracza
 var shipVelocity = 500;                         //prędkość poruszania się statku (default: 100, debug: 500)
@@ -282,7 +288,38 @@ class PowerShot extends Phaser.Physics.Arcade.Sprite {
     }
 }
 
+class PauseScene extends Phaser.Scene{
+    constructor() {
+        super({ key: 'PauseScene', });
+    }
 
+    preload(){
+        pauseBackground = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
+    }
+    create(){
+        pauseSceneText = this.add.text(game.config.width / 2, game.config.height / 2, 'Press "P" to continue!', { font: "30px PressStart2P" }).setOrigin(0.5);;
+    }
+    update(time, delta){
+        //console.log("Update: isGamePaused: " + isGamePaused)
+        timeFromTextBlink2 += delta;
+        pauseBackground.tilePositionY -= 0.1;
+        if (timeFromTextBlink2 >= textBlinkingDelta) {
+            timeFromTextBlink2 = 0;
+            pauseSceneText.setVisible(!pauseSceneText.visible);
+            //console.log("pauseSceneText.visible == " + pauseSceneText.visible)
+        }
+        if(this.input.keyboard.checkDown(this.input.keyboard.addKey('P'), 50) && isGamePaused)
+        {
+            
+            pauseTimer = 0;
+            isGamePaused=false;
+            //console.log("isGamePaused: " + isGamePaused)
+            this.scene.stop("PauseScene")
+            this.scene.resume("GamePlay");
+            isGamePaused=false;
+        }
+    }
+}
 
 
 //scena rozgrywki
@@ -348,7 +385,6 @@ class GamePlay extends Phaser.Scene {
 
     create() {
         enemies = null;
-
         //dodanie sprite'ów tła i statków
         background = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
         stars2 = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background2').setScale(0.75)
@@ -505,6 +541,7 @@ class GamePlay extends Phaser.Scene {
         dwa = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
         trzy = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
         powerShotButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL)
+        pauseButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P)
 
         bullets = new Bullets(this);
         bonusses = new Bonusses(this);
@@ -519,8 +556,13 @@ class GamePlay extends Phaser.Scene {
     }
 
     update(time, delta) {
+        
         timeFromLastShot += delta;
-
+        pauseTimer += delta;
+        isGamePaused = false;
+        if(pauseTimer >= 1500){
+            canPause=true;
+        }
         //jeśli na planszy nie ma przeciwników to przejdź do następnego poziomu
         if (enemies.countActive() == 0) {
             //tutaj zrobić przejście do sklepu po [4, 8, 12...] poziomie
@@ -528,6 +570,7 @@ class GamePlay extends Phaser.Scene {
             this.scene.restart();
         }
         background.tilePositionY -= 0.1;
+        console.log("background.tilePositionY = " + background.tilePositionY)
         stars2.tilePositionY -= 0.4;
         ship.body.velocity.x = 0;
 
@@ -537,7 +580,22 @@ class GamePlay extends Phaser.Scene {
             ship.body.velocity.x = shipVelocity;
         }
 
-
+        //console.log("isGamePaused = " + isGamePaused)
+        //console.log("pauseTimer = " + pauseTimer)
+        //console.log("canPause = " + canPause)
+        
+        //console.log("pauseButton.isDown = " + pauseButton.isDown)
+        if(this.input.keyboard.checkDown(this.input.keyboard.addKey('P'), 100) && isGamePaused==false && pauseTimer >= 1500 && canPause == true)
+        {
+            pauseTimer = 0;
+            isGamePaused = true;
+            //console.log("isGamePaused: " + isGamePaused)
+            this.scene.pause("GamePlay");
+            this.scene.launch("PauseScene");
+        }
+        if (!pauseButton.isDown) { canPause = false
+            
+        }
         //DEBUG DO TESTOWANIA POCISKÓW
 
         //if(jeden.isDown){playerLaserType=1}
@@ -811,7 +869,7 @@ var config = {
     },
     backgroundColor: "48a",
     pixelArt: true,
-    scene: [MainMenu, GamePlay]
+    scene: [MainMenu, GamePlay, PauseScene]
 }
 var game = new Phaser.Game(config);
 
