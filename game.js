@@ -3,26 +3,31 @@ var Enter;                                      //tekst "Enter" w menu
 var pressEnterText;                             //tekst "Press       to play" w menu
 var timeFromTextBlink = 0;                      //czas od ostatniego "mrygnięcia" tekstu na ekranie startowym
 var textBlinkingDelta = 1000;                   //co jaki czas ma mrygać tekst na ekranie startowym
-var timeFromTextBlink2 = 0;                   //co jaki czas ma mrygać tekst na ekranie startowym
+var timeFromTextBlink2 = 0;                     //co jaki czas ma mrygać tekst na ekranie startowym
 var canStartGame = true;                        //czy można zacząć grę
 var isGamePaused = false;
 var pauseTimer = 0;
 var canPause = true;
-
-
+var storePosition1, storePosition2, storePosition3, storePosition4, storePosition5, storePosition6, storePosition7
+var stPos1Text, stPos2Text, stPos3Text, stPos4Text, stPos5Text, stPos6Text, stPos7Text
+var stPos1CenaText,stPos2CenaText, stPos3CenaText,stPos4CenaText,stPos5CenaText,stPos6CenaText,stPos7CenaText
+var scoreText2, returnText2, kupionoText
+var powrotzesklepu=false
+var isInShop=false
 //input
 var startButton;                                //przycisk startu gry (tu ENTER)
 var pauseButton;                                //przycisk startu gry (tu ENTER)
 var cursors;                                    //strzałki na klawiaturze (potrzebne do inputa)
 var fireButton;                                 //przycisk odpowiedzialny za strzał (tu SPACJA)
 var powerShotButton                             //przycisk aktywacji broni specjalnej (tu lewy CTRL)
-
+var kup1, kup2, kup3, kup4, kup5, kup6, kup7
 
 //obiekty gry / tekstury / teksty
 var ship;                                       //statek gracza (sprite)
 var background;                                 //tło planszy (to pod spodem)
-var pauseBackground;                                 //tło planszy (to pod spodem)
+var pauseBackground;                            //tło planszy (to pod spodem)
 var menuBackground;
+var storeBackground;
 var stars2;                                     //tło planszy (gwiazdy na wierzchu, te szybciej latające)
 var scoreText                                   //tekst przechowujący ilość punktów
 var livesText2
@@ -294,9 +299,10 @@ class PauseScene extends Phaser.Scene{
     }
 
     preload(){
-        pauseBackground = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
+        
     }
     create(){
+        pauseBackground = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
         pauseSceneText = this.add.text(game.config.width / 2, game.config.height / 2, 'Press "P" to continue!', { font: "30px PressStart2P" }).setOrigin(0.5);;
     }
     update(time, delta){
@@ -321,6 +327,152 @@ class PauseScene extends Phaser.Scene{
     }
 }
 
+class StoreScene extends Phaser.Scene{
+    constructor(){
+        super({ key: 'StoreScene', });
+    }
+
+    preload(){
+        
+    }
+    create(){
+        storeBackground = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
+        isInShop=true
+        storePosition1 = this.add.tileSprite(100, 110, 0, 0, 'singleLaserPowerUp');
+        stPos1Text = this.add.text(200, 100, "Kup Single Laser", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
+        stPos1CenaText = this.add.text(800, 125, "1000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
+
+        storePosition2 = this.add.tileSprite(100, 210, 0, 0, 'doubleLaserPowerUp');
+        stPos2Text = this.add.text(200, 200, "Kup Double Laser", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
+        stPos2CenaText = this.add.text(800, 225, "2500", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
+
+        storePosition3 = this.add.tileSprite(100, 310, 0, 0, 'tripleLaserPowerUp');
+        stPos3Text = this.add.text(200, 300, "Kup Triple Laser", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
+        stPos3CenaText = this.add.text(800, 325, "5000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
+
+        storePosition4 = this.add.tileSprite(100, 410, 0, 0, 'extraAmmo');
+        stPos4Text = this.add.text(200, 400, "Kup Extra Ammo", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
+        stPos4CenaText = this.add.text(800, 425, "2000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
+
+        storePosition5 = this.add.tileSprite(100, 510, 0, 0, 'extraSpeed');
+        stPos5Text = this.add.text(200, 500, "Kup Extra Speed", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
+        stPos5CenaText = this.add.text(800, 525, "2000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
+
+        storePosition6 = this.add.tileSprite(100, 610, 0, 0, 'extraLife');
+        stPos6Text = this.add.text(200, 600, "Kup Extra Life", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
+        stPos6CenaText = this.add.text(800, 625, "10000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
+
+        storePosition7 = this.add.tileSprite(100, 710, 0, 0, 'powerShotPowerUp');
+        stPos7Text = this.add.text(200, 700, "Kup PowerShot Ammo", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
+        stPos7CenaText = this.add.text(800, 725, "3000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
+
+        scoreText2 = this.add.text(config.width / 2, config.height * 0.025, '', { font: '24px PressStart2P', fill: '#ffffff' });
+        scoreText2.setOrigin(0.5);
+        scoreText2.setText('Score: ' + score);
+
+        returnText2 = this.add.text(config.width / 2, config.height * 0.95, '', { font: '24px PressStart2P', fill: '#ffffff' });
+        returnText2.setOrigin(0.5);
+        returnText2.setText("Press ESCAPE to continue!");
+
+        kup1 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
+        kup2 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
+        kup3 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
+        kup4 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.FOUR);
+        kup5 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.FIVE);
+        kup6 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SIX);
+        kup7 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SEVEN);
+    }
+    update(time, delta){
+        storeBackground.tilePositionY -= 0.1;
+        if(this.input.keyboard.checkDown(kup1, 100) && isInShop)
+        {
+            if (playerLaserType == 1) {
+                maxAmmo++;
+            }
+            else playerLaserType = 1;
+            // bullets = new Bullets(GamePlay)
+            // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
+            score-=1000
+            scoreText.setText("Score: " + score)
+            scoreText2.setText("Score: " + score)
+        }
+        if(this.input.keyboard.checkDown(kup2, 100) && isInShop)
+        {
+            playerLaserType = 2;
+            score-=2500
+            scoreText.setText("Score: " + score)
+            scoreText2.setText("Score: " + score)
+            // bullets = new Bullets(GamePlay)
+            // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
+        }
+        if(this.input.keyboard.checkDown(kup3, 100) && isInShop)
+        {
+            playerLaserType = 3;
+            
+            score-=5000
+            scoreText.setText("Score: " + score)
+            scoreText2.setText("Score: " + score)
+            // bullets = new Bullets(GamePlay)
+            // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
+        }
+        if(this.input.keyboard.checkDown(kup4, 100) && isInShop)
+        {
+            if (maxAmmo < 97)
+            {
+                maxAmmo += playerLaserType;
+                // bullets = new Bullets(GamePlay)
+                // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
+                score-=2000
+                scoreText.setText("Score: " + score)
+                scoreText2.setText("Score: " + score)
+            }
+        }
+        if(this.input.keyboard.checkDown(kup5, 100) && isInShop)
+        {
+            if (shipVelocity <= 980)
+            {
+                shipVelocity += 20;
+                score -= 2000
+                scoreText.setText("Score: " + score)
+                scoreText2.setText('Score: ' + score);
+            }
+        }
+        if(this.input.keyboard.checkDown(kup6, 100) && isInShop)
+        {
+            if (lives < 5)
+            {
+                lives++;
+                score-=10000
+                scoreText2.setText("Score: " + score)
+                scoreText.setText("Score: " + score)
+            livesText2.setText(lives);}
+        }
+        if(this.input.keyboard.checkDown(kup7, 100) && isInShop)
+        {
+            if (powerShotAmmo < 10) {
+                {
+                    powerShotAmmo++;
+                    score-=3000
+                    scoreText.setText("Score: " + score)
+                    scoreText2.setText("Score: " + score)
+                }
+            }
+        }
+        if(this.input.keyboard.checkDown(this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC), 100))
+        {
+            //console.log("isGamePaused: " + isGamePaused)
+            level--;
+            powrotzesklepu=true;
+            isInShop=false
+            this.scene.stop("StoreScene");
+            this.scene.resume("GamePlay");
+            level++
+            powrotzesklepu=false;
+            isInShop=false
+        }
+    }
+
+}
 
 //scena rozgrywki
 class GamePlay extends Phaser.Scene {
@@ -385,6 +537,8 @@ class GamePlay extends Phaser.Scene {
 
     create() {
         enemies = null;
+        powrotzesklepu=false;
+        isInShop=false
         //dodanie sprite'ów tła i statków
         background = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
         stars2 = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background2').setScale(0.75)
@@ -565,12 +719,23 @@ class GamePlay extends Phaser.Scene {
         }
         //jeśli na planszy nie ma przeciwników to przejdź do następnego poziomu
         if (enemies.countActive() == 0) {
-            //tutaj zrobić przejście do sklepu po [4, 8, 12...] poziomie
+            //console.log("Przejście z poziomu: " + level)
             level++;
-            this.scene.restart();
+            if(!powrotzesklepu)
+            {
+                this.scene.restart();}
+            if(level%4==1 && level!=1 && !isInShop){ //lub do sklepu co czwarty poziom
+                
+                this.scene.pause("GamePlay");
+                this.scene.launch("StoreScene");
+            }
+            //console.log("Przejście na poziom: " + level)
+            
+
+
         }
         background.tilePositionY -= 0.1;
-        console.log("background.tilePositionY = " + background.tilePositionY)
+        //console.log("background.tilePositionY = " + background.tilePositionY)
         stars2.tilePositionY -= 0.4;
         ship.body.velocity.x = 0;
 
@@ -593,9 +758,7 @@ class GamePlay extends Phaser.Scene {
             this.scene.pause("GamePlay");
             this.scene.launch("PauseScene");
         }
-        if (!pauseButton.isDown) { canPause = false
-            
-        }
+        if (!pauseButton.isDown) {canPause = false}
         //DEBUG DO TESTOWANIA POCISKÓW
 
         //if(jeden.isDown){playerLaserType=1}
@@ -732,37 +895,37 @@ function dropRandomBonus(tempX, tempY) {
 
         randomDrop = Math.ceil(Math.random() * 7)
         if (randomDrop == 1) {
-            console.log("Tutaj dropnij pojedyczny laser w miejscu: " + tempX + " " + tempY)
+            //console.log("Tutaj dropnij pojedyczny laser w miejscu: " + tempX + " " + tempY)
             bonusses.dropBonus(tempX, tempY, 1)
         }
 
         if (randomDrop == 2) {
-            console.log("Tutaj dropnij podwójny laser w miejscu: " + tempX + " " + tempY)
+            //console.log("Tutaj dropnij podwójny laser w miejscu: " + tempX + " " + tempY)
             bonusses.dropBonus(tempX, tempY, 2)
         }
 
         if (randomDrop == 3) {
-            console.log("Tutaj dropnij potrójny laser w miejscu: " + tempX + " " + tempY)
+            //console.log("Tutaj dropnij potrójny laser w miejscu: " + tempX + " " + tempY)
             bonusses.dropBonus(tempX, tempY, 3)
         }
 
         if (randomDrop == 4) {
-            console.log("Tutaj dropnij extra ammo w miejscu: " + tempX + " " + tempY)
+            //console.log("Tutaj dropnij extra ammo w miejscu: " + tempX + " " + tempY)
             bonusses.dropBonus(tempX, tempY, 4)
         }
 
         if (randomDrop == 5) {
-            console.log("Tutaj dropnij extra speed w miejscu: " + tempX + " " + tempY)
+            //console.log("Tutaj dropnij extra speed w miejscu: " + tempX + " " + tempY)
             bonusses.dropBonus(tempX, tempY, 5)
         }
 
         if (randomDrop == 6) {
-            console.log("Tutaj dropnij extra life w miejscu: " + tempX + " " + tempY)
+            //console.log("Tutaj dropnij extra life w miejscu: " + tempX + " " + tempY)
             bonusses.dropBonus(tempX, tempY, 6)
         }
 
         if (randomDrop == 7) {
-            console.log("PowerShotAmmo: " + tempX + " " + tempY)
+            //console.log("PowerShotAmmo: " + tempX + " " + tempY)
             bonusses.dropBonus(tempX, tempY, 7)
         }
     }
@@ -869,7 +1032,7 @@ var config = {
     },
     backgroundColor: "48a",
     pixelArt: true,
-    scene: [MainMenu, GamePlay, PauseScene]
+    scene: [MainMenu, GamePlay, PauseScene, StoreScene]
 }
 var game = new Phaser.Game(config);
 
