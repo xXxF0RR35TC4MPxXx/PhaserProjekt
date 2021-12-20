@@ -14,6 +14,9 @@ var stPos1CenaText,stPos2CenaText, stPos3CenaText,stPos4CenaText,stPos5CenaText,
 var scoreText2, returnText2, kupionoText
 var powrotzesklepu=false
 var isInShop=false
+var levelRestartTimer=0
+var levelFinishText1, levelFinishText2
+
 //input
 var startButton;                                //przycisk startu gry (tu ENTER)
 var pauseButton;                                //przycisk startu gry (tu ENTER)
@@ -713,6 +716,7 @@ class GamePlay extends Phaser.Scene {
         
         timeFromLastShot += delta;
         pauseTimer += delta;
+        
         isGamePaused = false;
         if(pauseTimer >= 1500){
             canPause=true;
@@ -720,15 +724,33 @@ class GamePlay extends Phaser.Scene {
         //jeśli na planszy nie ma przeciwników to przejdź do następnego poziomu
         if (enemies.countActive() == 0) {
             //console.log("Przejście z poziomu: " + level)
-            level++;
-            if(!powrotzesklepu)
+            levelRestartTimer+=delta
+            levelFinishText1 = this.add.text(config.width / 2, config.height / 2, '', { font: '24px PressStart2P', fill: '#ffffff' });
+            levelFinishText1.setOrigin(0.5);
+            levelFinishText1.setText("Level " + level + " complete!");
+            var tempLvl = 1+level
+            if(levelRestartTimer>2000)
             {
-                this.scene.restart();}
-            if(level%4==1 && level!=1 && !isInShop){ //lub do sklepu co czwarty poziom
-                
-                this.scene.pause("GamePlay");
-                this.scene.launch("StoreScene");
+                levelFinishText2 = this.add.text(config.width / 2, config.height / 2 + 50, '', { font: '24px PressStart2P', fill: '#ffffff' });
+                levelFinishText2.setOrigin(0.5);
+                levelFinishText2.setText("Level " + tempLvl + "! Get ready!");
             }
+            if(levelRestartTimer>3500)
+            {level++
+                levelFinishText1.setText("")
+                levelRestartTimer=0
+                if(!powrotzesklepu)
+                {
+                    this.scene.restart();}
+                if(level%4==1 && level!=1 && !isInShop){ //lub do sklepu co czwarty poziom
+                    
+                    this.scene.pause("GamePlay");
+                    this.scene.launch("StoreScene");
+                }
+            }
+            
+            
+            
             //console.log("Przejście na poziom: " + level)
             
 
