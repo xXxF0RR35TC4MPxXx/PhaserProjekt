@@ -5,38 +5,45 @@ var timeFromTextBlink = 0;                      //czas od ostatniego "mrygnięci
 var textBlinkingDelta = 1000;                   //co jaki czas ma mrygać tekst na ekranie startowym
 var timeFromTextBlink2 = 0;                     //co jaki czas ma mrygać tekst na ekranie startowym
 var canStartGame = true;                        //czy można zacząć grę
-var isGamePaused = false;
-var pauseTimer = 0;
-var canPause = true;
+
+//tekst w sklepie
 var storePosition1, storePosition2, storePosition3, storePosition4, storePosition5, storePosition6, storePosition7
 var stPos1Text, stPos2Text, stPos3Text, stPos4Text, stPos5Text, stPos6Text, stPos7Text
 var stPos1CenaText,stPos2CenaText, stPos3CenaText,stPos4CenaText,stPos5CenaText,stPos6CenaText,stPos7CenaText
-var scoreText2, returnText2, kupionoText
-var powrotzesklepu=false
-var isInShop=false
-var levelRestartTimer=0
-var levelFinishText1, levelFinishText2
-var scoreForEnemy = 100
+var scoreText2, returnText2
+
+//logika do pauzy
+var isGamePaused = false;                       //czy gra jest zapauzowana
+var pauseTimer = 0;                             //timer, ile czasu od ostatniej pauzy upłynęło
+var canPause = true;                            //czy można zapauzować grę
+
+var powrotzesklepu=false    
+var isInShop=false                              //zmienna czy jest w sklepie
+var levelRestartTimer=0                         //timer, ile czasu po końcu poziomu ma się załadować następny
+
+
 //input
 var startButton;                                //przycisk startu gry (tu ENTER)
 var pauseButton;                                //przycisk startu gry (tu ENTER)
 var cursors;                                    //strzałki na klawiaturze (potrzebne do inputa)
 var fireButton;                                 //przycisk odpowiedzialny za strzał (tu SPACJA)
 var powerShotButton                             //przycisk aktywacji broni specjalnej (tu lewy CTRL)
-var kup1, kup2, kup3, kup4, kup5, kup6, kup7
+var kup1, kup2, kup3, kup4, kup5, kup6, kup7    //przyciski 1-7 na klawiaturze (do kupowania w sklepie)
 
 //obiekty gry / tekstury / teksty
 var ship;                                       //statek gracza (sprite)
 var background;                                 //tło planszy (to pod spodem)
 var pauseBackground;                            //tło planszy (to pod spodem)
-var menuBackground;
-var storeBackground;
+var menuBackground;                             //tło w menu
+var storeBackground;                            //tło w sklepie
 var stars2;                                     //tło planszy (gwiazdy na wierzchu, te szybciej latające)
 var scoreText                                   //tekst przechowujący ilość punktów
-var livesText2
-var pauseSceneText
-var coKupionoText
-var path
+var livesText2                                  //tekst z ilością żyć
+var pauseSceneText                              //tekst podczas pauzy
+var coKupionoText                               //nazwa kupionego przedmiotu
+var path                                        //ścieżka / droga po której poruszają się przeciwnicy na danym poziomie
+var levelFinishText1, levelFinishText2          //tekst po zakończeniu poziomu
+
 //wartości zmiennych statku gracza
 var shipVelocity = 500;                         //prędkość poruszania się statku (default: 100, debug: 500)
 var timeFromLastShot = 0;                       //czas od ostatniego strzału
@@ -52,15 +59,15 @@ var level = 1;                                  //numer planszy
 var powerShotAmmo = 5;                          //amunicja broni specjalnej
 var playerLaserType = 1;                        //typ lasera gracza (Panie Areczku, playerLaserType=3 jest dla developerów. Dla pana jest playerLaserType=1)
 var randomDropChance = 2;                       //szansa na drop bonusu z przeciwnika (0-100%)
-
+var scoreForEnemy = 100                         //punkty za zestrzelenie wroga
 
 //grupy obiektów w czasie gry
 var enemies                                     //zbiór/grupa przeciwników
 var bullets                                     //zbiór/grupa strzałów podstawowych gracza
 var powerShots                                  //zbiór/grupa strzałów bonusowych
 var bonusses                                    //zbiór/grupa bonusów wypadających z przeciwnika
-var powerup
-var randomDrop
+var powerup                                     //pojedynczy powerup
+var randomDrop                                  //losowy drop
 
 //debug only
 var jeden, dwa, trzy;                           //tylko do debugowania, zmiana typu lasera pod przyciskami '1', '2', '3' na klawiaturze.
@@ -72,12 +79,12 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
     }
 
     fire(x, y) {
-        this.setActive(true); //ustawienie pocisku na aktywny i widoczny
+        this.setActive(true);       //ustawienie pocisku na aktywny i widoczny
         this.setVisible(true);
         this.body.reset(x, y);
         this.body.setEnable(true)
-        this.setVelocityY(-1000); //ustawienie prędkości lotu pocisku
-        this.angle = 0;
+        this.setVelocityY(-1000);   //ustawienie prędkości lotu pocisku
+        this.angle = 0;             //ustawienie pochylenia pocisku na 0 stopni
     }
 
 
@@ -192,7 +199,7 @@ class Bonusses extends Phaser.Physics.Arcade.Group {
 
         if (bonus) //jeśli taki istnieje
         {
-
+            //ustawianie tekstury w zależności od typu power'upu
             bonus.type = type;
             if (bonus.type == 1) {
                 bonus.setTexture('singleLaserPowerUp')
@@ -223,22 +230,22 @@ class Bonusses extends Phaser.Physics.Arcade.Group {
 //klasa pojedynczego bonusu
 class Bonus extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
-        super(scene, x, y, 'singleLaserPowerUp');
+        super(scene, x, y, 'singleLaserPowerUp'); //singleLaser to tekstura domyślna, podmieniana przy dropnięciu itemu
     }
 
     drop(x, y) {
-        this.setActive(true); //ustawienie pocisku na aktywny i widoczny
+        this.setActive(true); //ustawienie bonusu na aktywny i widoczny
         this.setVisible(true);
         this.body.reset(x, y);
         this.body.setEnable(true)
-        this.setVelocityY(100); //ustawienie prędkości lotu pocisku
+        this.setVelocityY(100); //ustawienie prędkości lotu bonusu
         this.angle = 0;
     }
 
     preUpdate(time, delta) {
         super.preUpdate(time, delta);
 
-        if (this.y >= 932) //kiedy pocisk wyleci poza planszę to ustaw na niewidoczny i nieaktywny
+        if (this.y >= 932) //kiedy bonus wyleci poza planszę to ustaw na niewidoczny i nieaktywny
         {
             this.setActive(false);
             this.setVisible(false);
@@ -310,21 +317,22 @@ class PauseScene extends Phaser.Scene{
         pauseBackground = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
         pauseSceneText = this.add.text(game.config.width / 2, game.config.height / 2, 'Press "P" to continue!', { font: "30px PressStart2P" }).setOrigin(0.5);;
     }
-    update(time, delta){
-        //console.log("Update: isGamePaused: " + isGamePaused)
+    update(time, delta)
+    {
         timeFromTextBlink2 += delta;
-        pauseBackground.tilePositionY -= 0.1;
+        pauseBackground.tilePositionY -= 0.1; //przesuwanie tła do dołu
+
+        //mryganie napisu
         if (timeFromTextBlink2 >= textBlinkingDelta) {
             timeFromTextBlink2 = 0;
             pauseSceneText.setVisible(!pauseSceneText.visible);
-            //console.log("pauseSceneText.visible == " + pauseSceneText.visible)
         }
+
+        //wyjście z pauzy / odpauzowanie po wciśnięciu "P"
         if(this.input.keyboard.checkDown(this.input.keyboard.addKey('P'), 50) && isGamePaused)
         {
-            
             pauseTimer = 0;
             isGamePaused=false;
-            //console.log("isGamePaused: " + isGamePaused)
             this.scene.stop("PauseScene")
             this.scene.resume("GamePlay");
             isGamePaused=false;
@@ -343,9 +351,11 @@ class StoreScene extends Phaser.Scene{
     create(){
         storeBackground = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
         isInShop=true
-        storePosition1 = this.add.tileSprite(100, 110, 0, 0, 'singleLaserPowerUp');
-        stPos1Text = this.add.text(200, 100, "Kup Single Laser", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
-        stPos1CenaText = this.add.text(800, 125, "1000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
+
+        //item nr 1 w sklepie
+        storePosition1 = this.add.tileSprite(100, 110, 0, 0, 'singleLaserPowerUp');                                                     //ustawienie miniaturki
+        stPos1Text = this.add.text(200, 100, "Kup Single Laser", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)           //ustawienie nazwy
+        stPos1CenaText = this.add.text(800, 125, "1000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)                   //ustawienie ceny
 
         storePosition2 = this.add.tileSprite(100, 210, 0, 0, 'doubleLaserPowerUp');
         stPos2Text = this.add.text(200, 200, "Kup Double Laser", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
@@ -371,16 +381,20 @@ class StoreScene extends Phaser.Scene{
         stPos7Text = this.add.text(200, 700, "Kup PowerShot Ammo", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
         stPos7CenaText = this.add.text(800, 725, "3000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
 
+        //tekst tego co kupiono
         coKupionoText = this.add.text(config.width/2, 800, "", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0.5)
 
+        //wypisanie licznika punktów na górze ekranu
         scoreText2 = this.add.text(config.width / 2, config.height * 0.025, '', { font: '24px PressStart2P', fill: '#ffffff' });
         scoreText2.setOrigin(0.5);
         scoreText2.setText('Score: ' + score);
         
+        //wypisanie instrukcji powrotu do gry na dole ekranu
         returnText2 = this.add.text(config.width / 2, config.height * 0.95, '', { font: '24px PressStart2P', fill: '#ffffff' });
         returnText2.setOrigin(0.5);
         returnText2.setText("Press ESCAPE to continue!");
 
+        //przypisanie przycisków 1-7 do zmiennych
         kup1 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
         kup2 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
         kup3 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
@@ -391,6 +405,7 @@ class StoreScene extends Phaser.Scene{
     }
     update(time, delta){
         storeBackground.tilePositionY -= 0.1;
+        //logika zakupów i ich wpływ na statek
         if(this.input.keyboard.checkDown(kup1, 100) && isInShop && score >= 1000)
         {
             if (playerLaserType == 1) {
@@ -472,6 +487,7 @@ class StoreScene extends Phaser.Scene{
                 }
             }
         }
+        //wyjście ze sklepu po wciśnięciu "ESCAPE"
         if(this.input.keyboard.checkDown(this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC), 100))
         {
             //console.log("isGamePaused: " + isGamePaused)
@@ -642,30 +658,34 @@ class GamePlay extends Phaser.Scene {
             spacing: { y: 1 } // określenie odstępu między początkiem a końcem dwóch znaków
         };
 
-        //dobry path do poziomu %3
-        if(level%4==3){
-        path = new Phaser.Curves.Path(450, -150);
-        path.lineTo(450, 50);
-        var max = 16;
-        var h = 850 / max;
-        for (var i = 0; i < max-2; i++)
+        //dobry path do poziomu %3 [3, 7, 11...]
+        if(level%4==3)
         {
-            if(i==13){
-                path.lineTo(450,800)
-            }
-            if(i==14){
-                path.lineTo(450, 900)
-            }
-            if (i % 2 === 0&&i!=14)
+            path = new Phaser.Curves.Path(450, -150);
+            path.lineTo(450, 50);
+            var max = 16;
+            var h = 850 / max;
+            for (var i = 0; i < max-2; i++)
             {
-                path.lineTo(800, 50 + h * (i + 1));
+                if(i==13){
+                    path.lineTo(450,800)
+                }
+                if(i==14){
+                    path.lineTo(450, 900)
+                }
+                if (i % 2 === 0&&i!=14)
+                {
+                    path.lineTo(800, 50 + h * (i + 1));
+                }
+                if(i%2!=0 && i!=13)
+                {
+                    path.lineTo(100, 50 + h * (i + 1));
+                }
             }
-            if(i%2!=0 && i!=13)
-            {
-                path.lineTo(100, 50 + h * (i + 1));
-            }
+            path.lineTo(450, 950);
         }
-        path.lineTo(450, 950);}
+
+        //dobry path do poziomu %0 [4, 8, 12...]
         if(level%4==0){
             path = new Phaser.Curves.Path(450, -150);
             path.lineTo(450,450);
@@ -680,39 +700,46 @@ class GamePlay extends Phaser.Scene {
             path.lineTo(750, 100)
             path.lineTo(750, 932)
         }
+
+        //dobry path do poziomu %1 [1, 5, 9...]
         if(level%4==1){
                 path = new Phaser.Curves.Path(config.width/2, config.height/16);
                 path.circleTo(300, true, 270);
             
         }
+
         //wypisanie ilości żyć na ekran
         this.cache.bitmapFont.add('heartFont', Phaser.GameObjects.RetroFont.Parse(this, heartFontConfig));
         livesText2 = this.add.bitmapText(config.width * 0.995, config.height * 0.995, 'heartFont', lives).setScale(2.25);
         livesText2.setOrigin(1);
-        bullets = new Bullets(this);
+
+        //generowanie przeciwników na poziomach [1, 5, 9...]
         if (level % 4 == 1)
         {
+            //tworzenie grupy
             enemies = this.physics.add.group();
             enemies.enableBody = true
             enemies.physicsBodyType = Phaser.Physics.ARCADE;
-            for (var i = 1; i < 49; i++)
+
+            for (var i = 1; i < 49; i++) //49 to liczba przeciwników + 1
                 {
-                    var alien = enemies.create(config.width/2, config.height/16, 'alien1png');
-                    alien.vector=new Phaser.Math.Vector2();
-                    this.tweens.add({
-                    targets: alien,
-                    z: 1,
-                    ease: 'Linear',
-                    duration: 12000,
-                    repeat: -1,
-                    delay: i * 250
-                });
+                    var alien = enemies.create(config.width/2, config.height/16, 'alien1png'); //stworzenie przeciwnika we wskazanym miejscu i o zadanej teksturze
+                    alien.vector=new Phaser.Math.Vector2(); //tworzenie wektora ruchu kosmity
+                    this.tweens.add({                       //fizyczny syf potrzebny do ruchu kosmity po wyznaczonej ścieżce
+                        targets: alien,                         //kto ma to robić
+                        z: 1,                                   //typ ruchu (w dokumentacji więcej)
+                        ease: 'Linear',
+                        duration: 12000,                        //czas trwania
+                        repeat: -1,                             //ile razy powtarzać (-1 = w nieskończoność)
+                        delay: i * 250                          //opóźnienie w generowaniu kolejnych przeciwników
+                    });
                 }
                 enemies.children.iterate(alien => {
-                    alien.anims.play('alien1anim')
+                    alien.anims.play('alien1anim')              //niech każdy alien w grupie zacznie odgrywać animację o wskazanej nazwie
                     
                 })
         }
+        //generowanie przeciwników na poziomach [2, 6, 10...]
         if (level % 4 == 2)
         {
         enemies = this.physics.add.group();
@@ -731,10 +758,10 @@ class GamePlay extends Phaser.Scene {
             }
             enemies.children.iterate(alien => {
                 alien.anims.play('alien2anim')
-
-                
             })
         }
+
+        //generowanie przeciwników na poziomach [3, 7, 11...]
         if (level % 4 == 3)
         {
         enemies = this.physics.add.group();
@@ -757,7 +784,10 @@ class GamePlay extends Phaser.Scene {
                 alien.anims.play('alien3anim')
                 
             })
-        }if (level % 4 == 0)
+        }
+        
+        //generowanie przeciwników na poziomach [4, 8, 12...]
+        if (level % 4 == 0)
         {
             enemies = this.physics.add.group();
             enemies.enableBody = true
@@ -777,7 +807,6 @@ class GamePlay extends Phaser.Scene {
                 }
                 enemies.children.iterate(alien => {
                     alien.anims.play('alien4anim')
-                    
                 })
             }
 
@@ -790,7 +819,8 @@ class GamePlay extends Phaser.Scene {
         powerShotButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL)
         pauseButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P)
 
-        
+        //inicjowanie grup/zbiorów/kolekcji itemów
+        bullets = new Bullets(this);
         bonusses = new Bonusses(this);
         powerShots = new PowerShots(this);
         // game.debugShowBody(bullets)
@@ -812,16 +842,18 @@ class GamePlay extends Phaser.Scene {
         if(pauseTimer >= 1500){
             canPause=true;
         }
-        //jeśli na planszy nie ma przeciwników to przejdź do następnego poziomu
+        
+        //jeżeli na planszy [2, 6, 10...] jest dużo wrogów to niech przesuwają się w bok (w prawo)
         if(enemies.countActive()>=14 && level%4==2){
             enemies.children.each(function(enemy) {
                 enemy.body.setVelocity(speed, 0);
-                if(enemy.x>=932){
-                    enemy.x=-32
+                if(enemy.x>=932){               //jak wyjdą za daleko w bok
+                    enemy.x=-32                 //to niech się wrócą z drugiej stronę
                 }
             }, this);
         }
 
+        //logika podążania kosmitów za ścieżką
         if(enemies.countActive() >= 0 && (level%4==3 || level%4==0 || level%4==1) ){
             var el = enemies.getChildren()
             for (var i = 0; i < el.length; i++)
@@ -835,20 +867,25 @@ class GamePlay extends Phaser.Scene {
             }
         }
 
+        //logika podążania kosmitów za graczem
         if(enemies.countActive() < 14 && level%4!=3 && level%4!=0 && level%4!=1)
         {
             enemies.children.each(function(enemy) {
                 const dx = ship.x - enemy.x;
                 const dy = ship.y - enemy.y;
-                if(enemy.y<450){
-                const angle = Math.atan2(dy, dx);
-                enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * 200);
+                if(enemy.y<450) //kosmita podąża za graczem do pewnej wysokości, potem trzyma kurs
+                {
+                    const angle = Math.atan2(dy, dx);
+                    enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * 200);
                 }
-                if(enemy.y>932){
-                    enemy.y=-32
+                if(enemy.y>932)
+                {
+                    enemy.y=-32 // kiedy wyleci poza mapę na dole to wraca na górze
                 }
             }, this);
         }
+
+        //kiedy poziom się zakończy
         if (enemies.countActive() == 0) {
             levelRestartTimer+=delta
             levelFinishText1 = this.add.text(config.width / 2, config.height / 2, '', { font: '24px PressStart2P', fill: '#ffffff' });
@@ -877,17 +914,20 @@ class GamePlay extends Phaser.Scene {
             }
             
         }
+
+        //przesuwanie tła i zerowanie prędkości statku gracza kiedy nie ma inputa
         background.tilePositionY -= 0.1;
         stars2.tilePositionY -= 0.4;
         ship.body.velocity.x = 0;
 
+        //czytanie inputa i sterowanie statkiem
         if (cursors.left.isDown && ship.body.x >= 0) {
             ship.body.velocity.x = -shipVelocity;
         } else if (cursors.right.isDown && ship.body.x < config.width - ship.body.width) {
             ship.body.velocity.x = shipVelocity;
         }
 
-
+        //pauza gry po wciśnięciu "P"
         if(this.input.keyboard.checkDown(this.input.keyboard.addKey('P'), 100) && isGamePaused==false && pauseTimer >= 1500 && canPause == true)
         {
             pauseTimer = 0;
@@ -898,13 +938,14 @@ class GamePlay extends Phaser.Scene {
         }
         if (!pauseButton.isDown) {canPause = false}
 
-
+        //strzał główny
         if (fireButton.isDown && timeFromLastShot >= shotDelta && canShoot) {
             bullets.fireBullet(ship.x, ship.y * 0.95);
             canShoot = false;
         }
         if (!fireButton.isDown) { canShoot = true }
 
+        //powerShot (strzał alternatywny)
         if (powerShotButton.isDown && canShootPowerShot) {
             powerShots.getPowerShot(ship.x, ship.y * 0.95);
             canShootPowerShot = false;
@@ -1002,6 +1043,7 @@ function shipCollectsBonus(ship, bonus) {
     bonus.body.setEnable(false);
 }
 
+//logika trafienia powerShotem w przeciwnika
 function powerShotHitsEnemy(powerShot, enemy) {
 
     const temp = this.add.sprite(enemy.x, enemy.y)
@@ -1021,6 +1063,7 @@ function powerShotHitsEnemy(powerShot, enemy) {
     dropRandomBonus(tempX, tempY)
 }
 
+//logika losowych dropów
 function dropRandomBonus(tempX, tempY) {
     randomDrop = Math.random() * 100;
     if (randomDrop < randomDropChance) { //ustawiam ~1% szans na drop bonusu z przeciwnika
@@ -1063,6 +1106,7 @@ function dropRandomBonus(tempX, tempY) {
     }
 }
 
+//logika trafienia przeciwnika zwykłym pociskiem
 function bulletHitsEnemy(bullet, enemy) {
 
     //console.log("HIT")
@@ -1086,6 +1130,7 @@ function bulletHitsEnemy(bullet, enemy) {
     dropRandomBonus(tempX, tempY)
 
 }
+
 //scena głównego menu
 class MainMenu extends Phaser.Scene {
     constructor() {
