@@ -293,6 +293,7 @@ class PowerShot extends Phaser.Physics.Arcade.Sprite {
         {
             this.setActive(false);
             this.setVisible(false);
+            this.body.setEnable(false);
         }
     }
 }
@@ -390,7 +391,7 @@ class StoreScene extends Phaser.Scene{
     }
     update(time, delta){
         storeBackground.tilePositionY -= 0.1;
-        if(this.input.keyboard.checkDown(kup1, 100) && isInShop)
+        if(this.input.keyboard.checkDown(kup1, 100) && isInShop && score >= 1000)
         {
             if (playerLaserType == 1) {
                 maxAmmo++;
@@ -403,7 +404,7 @@ class StoreScene extends Phaser.Scene{
             scoreText.setText("Score: " + score)
             scoreText2.setText("Score: " + score)
         }
-        if(this.input.keyboard.checkDown(kup2, 100) && isInShop)
+        if(this.input.keyboard.checkDown(kup2, 100) && isInShop&& score >= 2500)
         {
             playerLaserType = 2;
             score-=2500
@@ -413,7 +414,7 @@ class StoreScene extends Phaser.Scene{
             // bullets = new Bullets(GamePlay)
             // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
         }
-        if(this.input.keyboard.checkDown(kup3, 100) && isInShop)
+        if(this.input.keyboard.checkDown(kup3, 100) && isInShop&& score >= 5000)
         {
             playerLaserType = 3;
             
@@ -424,7 +425,7 @@ class StoreScene extends Phaser.Scene{
             // bullets = new Bullets(GamePlay)
             // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
         }
-        if(this.input.keyboard.checkDown(kup4, 100) && isInShop)
+        if(this.input.keyboard.checkDown(kup4, 100) && isInShop&& score >= 2000)
         {
             if (maxAmmo < 97)
             {
@@ -437,7 +438,7 @@ class StoreScene extends Phaser.Scene{
                 scoreText2.setText("Score: " + score)
             }
         }
-        if(this.input.keyboard.checkDown(kup5, 100) && isInShop)
+        if(this.input.keyboard.checkDown(kup5, 100) && isInShop&& score >= 2000)
         {
             if (shipVelocity <= 980)
             {
@@ -448,7 +449,7 @@ class StoreScene extends Phaser.Scene{
                 scoreText2.setText('Score: ' + score);
             }
         }
-        if(this.input.keyboard.checkDown(kup6, 100) && isInShop)
+        if(this.input.keyboard.checkDown(kup6, 100) && isInShop&& score >= 10000)
         {
             if (lives < 5)
             {
@@ -459,7 +460,7 @@ class StoreScene extends Phaser.Scene{
                 scoreText.setText("Score: " + score)
             livesText2.setText(lives);}
         }
-        if(this.input.keyboard.checkDown(kup7, 100) && isInShop)
+        if(this.input.keyboard.checkDown(kup7, 100) && isInShop&& score >= 3000)
         {
             if (powerShotAmmo < 10) {
                 {
@@ -643,7 +644,7 @@ class GamePlay extends Phaser.Scene {
 
         //dobry path do poziomu %3
         if(level%4==3){
-        path = new Phaser.Curves.Path(450, -50);
+        path = new Phaser.Curves.Path(450, -150);
         path.lineTo(450, 50);
         var max = 16;
         var h = 850 / max;
@@ -666,7 +667,7 @@ class GamePlay extends Phaser.Scene {
         }
         path.lineTo(450, 950);}
         if(level%4==0){
-            path = new Phaser.Curves.Path(450, -50);
+            path = new Phaser.Curves.Path(450, -150);
             path.lineTo(450,450);
             path.lineTo(500, 450)
             path.lineTo(500, 600)
