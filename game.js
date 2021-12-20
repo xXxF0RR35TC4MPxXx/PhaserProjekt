@@ -16,7 +16,7 @@ var powrotzesklepu=false
 var isInShop=false
 var levelRestartTimer=0
 var levelFinishText1, levelFinishText2
-
+var scoreForEnemy = 100
 //input
 var startButton;                                //przycisk startu gry (tu ENTER)
 var pauseButton;                                //przycisk startu gry (tu ENTER)
@@ -35,7 +35,8 @@ var stars2;                                     //tło planszy (gwiazdy na wierz
 var scoreText                                   //tekst przechowujący ilość punktów
 var livesText2
 var pauseSceneText
-
+var coKupionoText
+var path
 //wartości zmiennych statku gracza
 var shipVelocity = 500;                         //prędkość poruszania się statku (default: 100, debug: 500)
 var timeFromLastShot = 0;                       //czas od ostatniego strzału
@@ -49,7 +50,7 @@ var score = 0;                                  //wynik gracza
 var lives = 2;                                  //ilość żyć gracza
 var level = 1;                                  //numer planszy
 var powerShotAmmo = 5;                          //amunicja broni specjalnej
-var playerLaserType = 3;                        //typ lasera gracza (Panie Areczku, playerLaserType=3 jest dla developerów. Dla pana jest playerLaserType=1)
+var playerLaserType = 1;                        //typ lasera gracza (Panie Areczku, playerLaserType=3 jest dla developerów. Dla pana jest playerLaserType=1)
 var randomDropChance = 2;                       //szansa na drop bonusu z przeciwnika (0-100%)
 
 
@@ -369,10 +370,12 @@ class StoreScene extends Phaser.Scene{
         stPos7Text = this.add.text(200, 700, "Kup PowerShot Ammo", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)
         stPos7CenaText = this.add.text(800, 725, "3000", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(1)
 
+        coKupionoText = this.add.text(config.width/2, 800, "", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0.5)
+
         scoreText2 = this.add.text(config.width / 2, config.height * 0.025, '', { font: '24px PressStart2P', fill: '#ffffff' });
         scoreText2.setOrigin(0.5);
         scoreText2.setText('Score: ' + score);
-
+        
         returnText2 = this.add.text(config.width / 2, config.height * 0.95, '', { font: '24px PressStart2P', fill: '#ffffff' });
         returnText2.setOrigin(0.5);
         returnText2.setText("Press ESCAPE to continue!");
@@ -396,6 +399,7 @@ class StoreScene extends Phaser.Scene{
             // bullets = new Bullets(GamePlay)
             // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
             score-=1000
+            coKupionoText.setText('Kupiono Single Laser');
             scoreText.setText("Score: " + score)
             scoreText2.setText("Score: " + score)
         }
@@ -403,6 +407,7 @@ class StoreScene extends Phaser.Scene{
         {
             playerLaserType = 2;
             score-=2500
+            coKupionoText.setText('Kupiono Double Laser');
             scoreText.setText("Score: " + score)
             scoreText2.setText("Score: " + score)
             // bullets = new Bullets(GamePlay)
@@ -413,6 +418,7 @@ class StoreScene extends Phaser.Scene{
             playerLaserType = 3;
             
             score-=5000
+            coKupionoText.setText('Kupiono Triple Laser');
             scoreText.setText("Score: " + score)
             scoreText2.setText("Score: " + score)
             // bullets = new Bullets(GamePlay)
@@ -426,6 +432,7 @@ class StoreScene extends Phaser.Scene{
                 // bullets = new Bullets(GamePlay)
                 // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
                 score-=2000
+                coKupionoText.setText('Kupiono Extra Ammo');
                 scoreText.setText("Score: " + score)
                 scoreText2.setText("Score: " + score)
             }
@@ -436,6 +443,7 @@ class StoreScene extends Phaser.Scene{
             {
                 shipVelocity += 20;
                 score -= 2000
+                coKupionoText.setText('Kupiono Extra Speed');
                 scoreText.setText("Score: " + score)
                 scoreText2.setText('Score: ' + score);
             }
@@ -446,6 +454,7 @@ class StoreScene extends Phaser.Scene{
             {
                 lives++;
                 score-=10000
+                coKupionoText.setText('Kupiono Extra Life');
                 scoreText2.setText("Score: " + score)
                 scoreText.setText("Score: " + score)
             livesText2.setText(lives);}
@@ -456,6 +465,7 @@ class StoreScene extends Phaser.Scene{
                 {
                     powerShotAmmo++;
                     score-=3000
+                    coKupionoText.setText('Kupiono PowerShot Ammo');
                     scoreText.setText("Score: " + score)
                     scoreText2.setText("Score: " + score)
                 }
@@ -476,7 +486,8 @@ class StoreScene extends Phaser.Scene{
     }
 
 }
-
+var shipStartX = 450
+var speed = 50
 //scena rozgrywki
 class GamePlay extends Phaser.Scene {
     constructor() {
@@ -545,7 +556,7 @@ class GamePlay extends Phaser.Scene {
         //dodanie sprite'ów tła i statków
         background = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
         stars2 = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background2').setScale(0.75)
-        ship = this.physics.add.sprite(config.width / 2, config.height / 1.1, 'playerShip').setOrigin(0.5, 0.5).setScale(0.8);
+        ship = this.physics.add.sprite(shipStartX, config.height / 1.1, 'playerShip').setOrigin(0.5, 0.5).setScale(0.8);
 
         //dodanie animacji ze spritesheet'ów
         this.anims.create({
@@ -630,66 +641,193 @@ class GamePlay extends Phaser.Scene {
             spacing: { y: 1 } // określenie odstępu między początkiem a końcem dwóch znaków
         };
 
+        //dobry path do poziomu %3
+        if(level%4==3){
+        path = new Phaser.Curves.Path(450, -50);
+        path.lineTo(450, 50);
+        var max = 16;
+        var h = 850 / max;
+        for (var i = 0; i < max-2; i++)
+        {
+            if(i==13){
+                path.lineTo(450,800)
+            }
+            if(i==14){
+                path.lineTo(450, 900)
+            }
+            if (i % 2 === 0&&i!=14)
+            {
+                path.lineTo(800, 50 + h * (i + 1));
+            }
+            if(i%2!=0 && i!=13)
+            {
+                path.lineTo(100, 50 + h * (i + 1));
+            }
+        }
+        path.lineTo(450, 950);}
+        if(level%4==0){
+            path = new Phaser.Curves.Path(450, -50);
+            path.lineTo(450,450);
+            path.lineTo(500, 450)
+            path.lineTo(500, 600)
+            path.lineTo(350,600)
+            path.lineTo(350, 300)
+            path.lineTo(600, 300)
+            path.lineTo(600, 800)
+            path.lineTo(200, 800)
+            path.lineTo(200, 100)
+            path.lineTo(750, 100)
+            path.lineTo(750, 932)
+        }
+
         //wypisanie ilości żyć na ekran
         this.cache.bitmapFont.add('heartFont', Phaser.GameObjects.RetroFont.Parse(this, heartFontConfig));
         livesText2 = this.add.bitmapText(config.width * 0.995, config.height * 0.995, 'heartFont', lives).setScale(2.25);
         livesText2.setOrigin(1);
-
-
-
-        //tworzenie grup przeciwników
-        if (level % 4 == 1) {
-            enemies = this.physics.add.staticGroup({
-                key: 'alien1png', quantity: 28,
-                gridAlign: {
-                    width: 7, height: 4,
-                    cellWidth: 110, cellHeight: 100,
-                    x: 140, y: 140,
-                }
-            });
+        bullets = new Bullets(this);
+        if (level % 4 == 1)
+        {
+        enemies = this.physics.add.group();
+        enemies.enableBody = true
+        enemies.physicsBodyType = Phaser.Physics.ARCADE;
+        for (var i = 1; i < 31; i++)
+            {
+                if(i>=1 && i <8)
+                var alien = enemies.create(100*(i%7)+140, 140, 'alien1png');
+                if(i>=8 && i <15)
+                var alien = enemies.create(100*(i%7)+140, 240, 'alien1png');
+                if(i>=16 && i <23)
+                var alien =  enemies.create(100*(i%7)+140, 340, 'alien1png');
+                if(i>=24 && i <31)
+                var alien = enemies.create(100*(i%7)+140, 440, 'alien1png');
+            }
             enemies.children.iterate(alien => {
                 alien.anims.play('alien1anim')
+                
             })
         }
-        if (level % 4 == 2) {
-            enemies = this.physics.add.staticGroup({
-                key: 'alien2png', quantity: 28,
-                gridAlign: {
-                    width: 7, height: 4,
-                    cellWidth: 110, cellHeight: 100,
-                    x: 140, y: 140,
-                }
-            });
+        if (level % 4 == 2)
+        {
+        enemies = this.physics.add.group();
+        enemies.enableBody = true
+        enemies.physicsBodyType = Phaser.Physics.ARCADE;
+        for (var i = 1; i < 31; i++)
+            {
+                if(i>=1 && i <8)
+                var alien = enemies.create(100*(i%7)+140, 140, 'alien2png');
+                if(i>=8 && i <15)
+                var alien = enemies.create(100*(i%7)+140, 240, 'alien2png');
+                if(i>=16 && i <23)
+                var alien =  enemies.create(100*(i%7)+140, 340, 'alien2png');
+                if(i>=24 && i <31)
+                var alien = enemies.create(100*(i%7)+140, 440, 'alien2png');
+            }
             enemies.children.iterate(alien => {
                 alien.anims.play('alien2anim')
+
+                
             })
         }
-        if (level % 4 == 3) {
-            enemies = this.physics.add.staticGroup({
-                key: 'alien3png', quantity: 28,
-                gridAlign: {
-                    width: 7, height: 4,
-                    cellWidth: 100, cellHeight: 100,
-                    x: 140, y: 140,
-                }
-            });
+        if (level % 4 == 3)
+        {
+        enemies = this.physics.add.group();
+        enemies.enableBody = true
+        enemies.physicsBodyType = Phaser.Physics.ARCADE;
+        for (var i = 1; i < 80; i++)
+            {
+                var alien = enemies.create(config.width/2, -50, 'alien3png');
+                alien.vector=new Phaser.Math.Vector2();
+                this.tweens.add({
+                    targets: alien,
+                    z: 1,
+                    ease: 'Linear',
+                    duration: 12000,
+                    repeat: -1,
+                    delay: i * 100
+                });
+            }
             enemies.children.iterate(alien => {
                 alien.anims.play('alien3anim')
+                
             })
-        }
-        if (level % 4 == 0) {
-            enemies = this.physics.add.staticGroup({
-                key: 'alien4png', quantity: 28,
-                gridAlign: {
-                    width: 7, height: 4,
-                    cellWidth: 100, cellHeight: 100,
-                    x: 140, y: 140,
+        }if (level % 4 == 0)
+        {
+            enemies = this.physics.add.group();
+            enemies.enableBody = true
+            enemies.physicsBodyType = Phaser.Physics.ARCADE;
+            for (var i = 1; i < 50; i++)
+                {
+                    var alien = enemies.create(config.width/2, -50, 'alien4png');
+                    alien.vector=new Phaser.Math.Vector2();
+                    this.tweens.add({
+                        targets: alien,
+                        z: 1,
+                        ease: 'Linear',
+                        duration: 12000,
+                        repeat: -1,
+                        delay: i * 100
+                    });
                 }
-            });
-            enemies.children.iterate(alien => {
-                alien.anims.play('alien4anim')
-            })
-        }
+                enemies.children.iterate(alien => {
+                    alien.anims.play('alien4anim')
+                    
+                })
+            }
+        //STARA WERSJA TWORZENIA GRUP PRZECIWNIKÓW OPARTA O STATICGROUP i GRUP LAYOUT
+
+        //tworzenie grup przeciwników
+        // if (level % 4 == 1) {
+        //     enemies = this.physics.add.staticGroup({
+        //         key: 'alien1png', quantity: 28,
+        //         gridAlign: {
+        //             width: 7, height: 4,
+        //             cellWidth: 110, cellHeight: 100,
+        //             x: 140, y: 140,
+        //         }
+        //     });
+        //     enemies.children.iterate(alien => {
+        //         alien.anims.play('alien1anim')
+        //     })
+        // }
+        // if (level % 4 == 2) {
+        //     enemies = this.physics.add.staticGroup({
+        //         key: 'alien2png', quantity: 28,
+        //         gridAlign: {
+        //             width: 7, height: 4,
+        //             cellWidth: 110, cellHeight: 100,
+        //             x: 140, y: 140,
+        //         }
+        //     });
+        //     enemies.children.iterate(alien => {
+        //         alien.anims.play('alien2anim')
+        //     })
+        // }
+        // if (level % 4 == 3) {
+        //     enemies = this.physics.add.staticGroup({
+        //         key: 'alien3png', quantity: 28,
+        //         gridAlign: {
+        //             width: 7, height: 4,
+        //             cellWidth: 100, cellHeight: 100,
+        //             x: 140, y: 140,
+        //         }
+        //     });
+        //     enemies.children.iterate(alien => {
+        //         alien.anims.play('alien3anim')
+        //     })
+        // }
+        // if (level % 4 == 0) {
+        //     enemies = this.physics.add.staticGroup({
+        //         key: 'alien4png', quantity: 28,
+        //         gridAlign: {
+        //             width: 7, height: 4,
+        //             cellWidth: 100, cellHeight: 100,
+        //             x: 140, y: 140,
+        //         }
+        //     });
+        //     enemies.children.iterate(alien => {
+        //         alien.anims.play('alien4anim')
+        //     })
+        // }
 
         //przypisanie przycisków
         cursors = this.input.keyboard.createCursorKeys();
@@ -700,7 +838,7 @@ class GamePlay extends Phaser.Scene {
         powerShotButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL)
         pauseButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P)
 
-        bullets = new Bullets(this);
+        
         bonusses = new Bonusses(this);
         powerShots = new PowerShots(this);
         // game.debugShowBody(bullets)
@@ -710,6 +848,7 @@ class GamePlay extends Phaser.Scene {
         this.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
         this.physics.add.overlap(powerShots, enemies, powerShotHitsEnemy, null, this);
         this.physics.add.overlap(ship, bonusses, shipCollectsBonus, null, this);
+        
     }
 
     update(time, delta) {
@@ -722,6 +861,46 @@ class GamePlay extends Phaser.Scene {
             canPause=true;
         }
         //jeśli na planszy nie ma przeciwników to przejdź do następnego poziomu
+        if(enemies.countActive()>=7 && level%4==2){
+            enemies.children.each(function(enemy) {
+                enemy.body.setVelocity(speed, 0);
+                if(enemy.x>=932){
+                    enemy.x=-32
+                }
+            }, this);
+        }
+
+        if(enemies.countActive() >= 0 && (level%4==3 || level%4==0) ){
+            var el = enemies.getChildren()
+            for (var i = 0; i < el.length; i++)
+            {
+                var t = el[i].z;
+                var vec = el[i].vector;
+        
+                //  The vector is updated in-place
+                path.getPoint(t, vec);
+                
+                el[i].setPosition(vec.x, vec.y);
+        
+                el[i].setDepth(el[i].y);
+            }
+        }
+
+        if(enemies.countActive() < 7 && level%4!=3 && level%4!=0)
+        {
+            //console.log("JESTEM")
+            enemies.children.each(function(enemy) {
+                const dx = ship.x - enemy.x;
+                const dy = ship.y - enemy.y;
+                if(enemy.y<450){
+                const angle = Math.atan2(dy, dx);
+                enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * 150);
+                }
+                if(enemy.y>932){
+                    enemy.y=-32
+                }
+            }, this);
+        }
         if (enemies.countActive() == 0) {
             //console.log("Przejście z poziomu: " + level)
             levelRestartTimer+=delta
@@ -741,6 +920,7 @@ class GamePlay extends Phaser.Scene {
                 levelRestartTimer=0
                 if(!powrotzesklepu)
                 {
+                    shipStartX = ship.x
                     this.scene.restart();}
                 if(level%4==1 && level!=1 && !isInShop){ //lub do sklepu co czwarty poziom
                     
@@ -905,7 +1085,7 @@ function powerShotHitsEnemy(powerShot, enemy) {
     enemies.killAndHide(enemy)
 
     //  Increase the score
-    score += 20;
+    score += scoreForEnemy;
     scoreText.setText('Score: ' + score);
 
     dropRandomBonus(tempX, tempY)
@@ -955,6 +1135,7 @@ function dropRandomBonus(tempX, tempY) {
 
 function bulletHitsEnemy(bullet, enemy) {
 
+    //console.log("HIT")
     const temp = this.add.sprite(enemy.x, enemy.y)
     temp.anims.play('kill');
     bullets.killAndHide(bullet)
@@ -969,7 +1150,7 @@ function bulletHitsEnemy(bullet, enemy) {
     enemies.killAndHide(enemy)
 
     //  Increase the score
-    score += 20;
+    score += scoreForEnemy;
     scoreText.setText('Score: ' + score);
 
     dropRandomBonus(tempX, tempY)
