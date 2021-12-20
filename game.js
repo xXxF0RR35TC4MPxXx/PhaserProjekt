@@ -680,7 +680,11 @@ class GamePlay extends Phaser.Scene {
             path.lineTo(750, 100)
             path.lineTo(750, 932)
         }
-
+        if(level%4==1){
+                path = new Phaser.Curves.Path(config.width/2, config.height/16);
+                path.circleTo(300, true, 270);
+            
+        }
         //wypisanie ilości żyć na ekran
         this.cache.bitmapFont.add('heartFont', Phaser.GameObjects.RetroFont.Parse(this, heartFontConfig));
         livesText2 = this.add.bitmapText(config.width * 0.995, config.height * 0.995, 'heartFont', lives).setScale(2.25);
@@ -688,24 +692,26 @@ class GamePlay extends Phaser.Scene {
         bullets = new Bullets(this);
         if (level % 4 == 1)
         {
-        enemies = this.physics.add.group();
-        enemies.enableBody = true
-        enemies.physicsBodyType = Phaser.Physics.ARCADE;
-        for (var i = 1; i < 31; i++)
-            {
-                if(i>=1 && i <8)
-                var alien = enemies.create(100*(i%7)+140, 140, 'alien1png');
-                if(i>=8 && i <15)
-                var alien = enemies.create(100*(i%7)+140, 240, 'alien1png');
-                if(i>=16 && i <23)
-                var alien =  enemies.create(100*(i%7)+140, 340, 'alien1png');
-                if(i>=24 && i <31)
-                var alien = enemies.create(100*(i%7)+140, 440, 'alien1png');
-            }
-            enemies.children.iterate(alien => {
-                alien.anims.play('alien1anim')
-                
-            })
+            enemies = this.physics.add.group();
+            enemies.enableBody = true
+            enemies.physicsBodyType = Phaser.Physics.ARCADE;
+            for (var i = 1; i < 49; i++)
+                {
+                    var alien = enemies.create(config.width/2, config.height/16, 'alien1png');
+                    alien.vector=new Phaser.Math.Vector2();
+                    this.tweens.add({
+                    targets: alien,
+                    z: 1,
+                    ease: 'Linear',
+                    duration: 12000,
+                    repeat: -1,
+                    delay: i * 250
+                });
+                }
+                enemies.children.iterate(alien => {
+                    alien.anims.play('alien1anim')
+                    
+                })
         }
         if (level % 4 == 2)
         {
@@ -774,61 +780,6 @@ class GamePlay extends Phaser.Scene {
                     
                 })
             }
-        //STARA WERSJA TWORZENIA GRUP PRZECIWNIKÓW OPARTA O STATICGROUP i GRUP LAYOUT
-
-        //tworzenie grup przeciwników
-        // if (level % 4 == 1) {
-        //     enemies = this.physics.add.staticGroup({
-        //         key: 'alien1png', quantity: 28,
-        //         gridAlign: {
-        //             width: 7, height: 4,
-        //             cellWidth: 110, cellHeight: 100,
-        //             x: 140, y: 140,
-        //         }
-        //     });
-        //     enemies.children.iterate(alien => {
-        //         alien.anims.play('alien1anim')
-        //     })
-        // }
-        // if (level % 4 == 2) {
-        //     enemies = this.physics.add.staticGroup({
-        //         key: 'alien2png', quantity: 28,
-        //         gridAlign: {
-        //             width: 7, height: 4,
-        //             cellWidth: 110, cellHeight: 100,
-        //             x: 140, y: 140,
-        //         }
-        //     });
-        //     enemies.children.iterate(alien => {
-        //         alien.anims.play('alien2anim')
-        //     })
-        // }
-        // if (level % 4 == 3) {
-        //     enemies = this.physics.add.staticGroup({
-        //         key: 'alien3png', quantity: 28,
-        //         gridAlign: {
-        //             width: 7, height: 4,
-        //             cellWidth: 100, cellHeight: 100,
-        //             x: 140, y: 140,
-        //         }
-        //     });
-        //     enemies.children.iterate(alien => {
-        //         alien.anims.play('alien3anim')
-        //     })
-        // }
-        // if (level % 4 == 0) {
-        //     enemies = this.physics.add.staticGroup({
-        //         key: 'alien4png', quantity: 28,
-        //         gridAlign: {
-        //             width: 7, height: 4,
-        //             cellWidth: 100, cellHeight: 100,
-        //             x: 140, y: 140,
-        //         }
-        //     });
-        //     enemies.children.iterate(alien => {
-        //         alien.anims.play('alien4anim')
-        //     })
-        // }
 
         //przypisanie przycisków
         cursors = this.input.keyboard.createCursorKeys();
@@ -862,7 +813,7 @@ class GamePlay extends Phaser.Scene {
             canPause=true;
         }
         //jeśli na planszy nie ma przeciwników to przejdź do następnego poziomu
-        if(enemies.countActive()>=7 && level%4==2){
+        if(enemies.countActive()>=14 && level%4==2){
             enemies.children.each(function(enemy) {
                 enemy.body.setVelocity(speed, 0);
                 if(enemy.x>=932){
@@ -871,25 +822,21 @@ class GamePlay extends Phaser.Scene {
             }, this);
         }
 
-        if(enemies.countActive() >= 0 && (level%4==3 || level%4==0) ){
+        if(enemies.countActive() >= 0 && (level%4==3 || level%4==0 || level%4==1) ){
             var el = enemies.getChildren()
             for (var i = 0; i < el.length; i++)
             {
                 var t = el[i].z;
                 var vec = el[i].vector;
         
-                //  The vector is updated in-place
                 path.getPoint(t, vec);
-                
                 el[i].setPosition(vec.x, vec.y);
-        
                 el[i].setDepth(el[i].y);
             }
         }
 
-        if(enemies.countActive() < 7 && level%4!=3 && level%4!=0)
+        if(enemies.countActive() < 14 && level%4!=3 && level%4!=0 && level%4!=1)
         {
-            //console.log("JESTEM")
             enemies.children.each(function(enemy) {
                 const dx = ship.x - enemy.x;
                 const dy = ship.y - enemy.y;
@@ -903,7 +850,6 @@ class GamePlay extends Phaser.Scene {
             }, this);
         }
         if (enemies.countActive() == 0) {
-            //console.log("Przejście z poziomu: " + level)
             levelRestartTimer+=delta
             levelFinishText1 = this.add.text(config.width / 2, config.height / 2, '', { font: '24px PressStart2P', fill: '#ffffff' });
             levelFinishText1.setOrigin(0.5);
@@ -923,22 +869,15 @@ class GamePlay extends Phaser.Scene {
                 {
                     shipStartX = ship.x
                     this.scene.restart();}
-                if(level%4==1 && level!=1 && !isInShop){ //lub do sklepu co czwarty poziom
+                if(level%4==1 && level!=1 && !isInShop){ //do sklepu co czwarty poziom
                     
                     this.scene.pause("GamePlay");
                     this.scene.launch("StoreScene");
                 }
             }
             
-            
-            
-            //console.log("Przejście na poziom: " + level)
-            
-
-
         }
         background.tilePositionY -= 0.1;
-        //console.log("background.tilePositionY = " + background.tilePositionY)
         stars2.tilePositionY -= 0.4;
         ship.body.velocity.x = 0;
 
@@ -948,11 +887,7 @@ class GamePlay extends Phaser.Scene {
             ship.body.velocity.x = shipVelocity;
         }
 
-        //console.log("isGamePaused = " + isGamePaused)
-        //console.log("pauseTimer = " + pauseTimer)
-        //console.log("canPause = " + canPause)
-        
-        //console.log("pauseButton.isDown = " + pauseButton.isDown)
+
         if(this.input.keyboard.checkDown(this.input.keyboard.addKey('P'), 100) && isGamePaused==false && pauseTimer >= 1500 && canPause == true)
         {
             pauseTimer = 0;
@@ -962,13 +897,7 @@ class GamePlay extends Phaser.Scene {
             this.scene.launch("PauseScene");
         }
         if (!pauseButton.isDown) {canPause = false}
-        //DEBUG DO TESTOWANIA POCISKÓW
 
-        //if(jeden.isDown){playerLaserType=1}
-        //if(dwa.isDown){playerLaserType=2}
-        //if(trzy.isDown){playerLaserType=3}
-        //console.log("timeFromLastShot = " + timeFromLastShot)
-        //console.log("shotDelta = " + shotDelta)
 
         if (fireButton.isDown && timeFromLastShot >= shotDelta && canShoot) {
             bullets.fireBullet(ship.x, ship.y * 0.95);
