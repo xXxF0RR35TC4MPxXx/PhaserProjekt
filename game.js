@@ -895,7 +895,7 @@ class GamePlay extends Phaser.Scene {
                 const dy = ship.y - enemy.y;
                 if(enemy.y<450){
                 const angle = Math.atan2(dy, dx);
-                enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * 150);
+                enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * 200);
                 }
                 if(enemy.y>932){
                     enemy.y=-32
