@@ -11,6 +11,7 @@ var storePosition1, storePosition2, storePosition3, storePosition4, storePositio
 var stPos1Text, stPos2Text, stPos3Text, stPos4Text, stPos5Text, stPos6Text, stPos7Text
 var stPos1CenaText,stPos2CenaText, stPos3CenaText,stPos4CenaText,stPos5CenaText,stPos6CenaText,stPos7CenaText
 var scoreText2, returnText2
+var coKupionoText                               //nazwa kupionego przedmiotu
 
 //logika do pauzy
 var isGamePaused = false;                       //czy gra jest zapauzowana
@@ -41,19 +42,20 @@ var stars2;                                     //tło planszy (gwiazdy na wierz
 var scoreText                                   //tekst przechowujący ilość punktów
 var livesText2                                  //tekst z ilością żyć
 var pauseSceneText                              //tekst podczas pauzy
-var coKupionoText                               //nazwa kupionego przedmiotu
+var gameoverText;
+var gameoverText2;
 var path                                        //ścieżka / droga po której poruszają się przeciwnicy na danym poziomie
 var levelFinishText1, levelFinishText2          //tekst po zakończeniu poziomu
 var isAlive=true
 
 //wartości zmiennych statku gracza
-var shipVelocity = 500;                         //prędkość poruszania się statku (default: 100, debug: 500)
+
 var timeFromLastShot = 0;                       //czas od ostatniego strzału
 var shotDelta = 200;                            //różnica czasowa między strzałami
 var canShoot = true;                            //zmienna po to, żeby jedno kliknięcie strzelało tylko jeden raz, a nie full
 var canShootPowerShot = true;                   //zmienna po to, żeby jedno kliknięcie strzelało strzałem specjalnym tylko jeden raz, a nie full
 var maxAmmo = 12;                               //primary ammo (default: 2, debug: 12)
-
+var shipVelocity = 500;                         //prędkość poruszania się statku (default: 100, debug: 500)
 //wartości podczas rozgrywki (życia, ammo itp.)
 var score = 0;                                  //wynik gracza
 var lives = 2;                                  //ilość żyć gracza
@@ -68,8 +70,9 @@ var enemyShotDelta = 0
 var minEnemyShotDelta = 10000
 var enemyShotTimer = 0
 var enemyCanShoot = true
+var timeFromTextBlink3 =0 
 
-var gameOver = false //grupy obiektów w czasie gry
+var gameOver = false                            //grupy obiektów w czasie gry
 var enemies                                     //zbiór/grupa przeciwników
 var enemyBullets
 var bullets                                     //zbiór/grupa strzałów podstawowych gracza
@@ -636,6 +639,10 @@ class GamePlay extends Phaser.Scene {
         stars2 = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background2').setScale(0.75)
         ship = this.physics.add.sprite(shipStartX, config.height / 1.1, 'playerShip').setOrigin(0.5, 0.5).setScale(0.8);
 
+
+        
+
+
         //dodanie animacji ze spritesheet'ów
         this.anims.create({
             key: 'kill',
@@ -700,6 +707,25 @@ class GamePlay extends Phaser.Scene {
             return error;
         });
 
+        gameoverText = this.add.text(config.width/2, config.height/2.5,
+            'GAME OVER',
+            {
+            font: "40px PressStart2P",
+            fill: "#ffffff",
+            align: "center"
+            });
+            gameoverText.setOrigin(0.5);
+            gameoverText.visible = false;
+
+            gameoverText2 = this.add.text(config.width/2, config.height*0.95,
+                'Press ENTER to start again!',
+                {
+                font: "24px PressStart2P",
+                fill: "#ffffff",
+                align: "center"
+                });
+                gameoverText2.setOrigin(0.5);
+                gameoverText2.visible = false;
         //tekst wyniku
         scoreText = this.add.text(config.width / 2, config.height * 0.025, '', { font: '24px PressStart2P', fill: '#ffffff' });
         scoreText.setOrigin(0.5);
@@ -901,7 +927,7 @@ class GamePlay extends Phaser.Scene {
     update(time, delta) {
 
 
-
+        timeFromTextBlink3 +=delta
         timeFromLastShot += delta;
         pauseTimer += delta;
         
@@ -1015,7 +1041,7 @@ class GamePlay extends Phaser.Scene {
         if (!fireButton.isDown) { canShoot = true }
 
         //powerShot (strzał alternatywny)
-        if (powerShotButton.isDown && canShootPowerShot) {
+        if (powerShotButton.isDown && canShootPowerShot && isAlive && !gameOver) {
             powerShots.getPowerShot(ship.x, ship.y * 0.95);
             canShootPowerShot = false;
         }
@@ -1061,6 +1087,34 @@ class GamePlay extends Phaser.Scene {
         }
         if(lives<0){
             gameOver = true
+            gameoverText.visible=true
+            if(timeFromTextBlink3 > textBlinkingDelta)
+            {
+                timeFromTextBlink3=0
+                gameoverText2.visible = !gameoverText2.visible
+            }
+            if(this.input.keyboard.checkDown(this.input.keyboard.addKey('ENTER'), 100)){
+                //reset parametrów gry do wartości domyślnych
+                timeFromLastShot = 0;                       //czas od ostatniego strzału
+                shotDelta = 200;                            //różnica czasowa między strzałami
+                canShoot = true;                            //zmienna po to, żeby jedno kliknięcie strzelało tylko jeden raz, a nie full
+                canShootPowerShot = true;                   //zmienna po to, żeby jedno kliknięcie strzelało strzałem specjalnym tylko jeden raz, a nie full
+                maxAmmo = 12;                               //primary ammo (default: 2, debug: 12)
+                shipVelocity = 500;                         //prędkość poruszania się statku (default: 100, debug: 500)
+                score = 0;                                  //wynik gracza
+                lives = 2;                                  //ilość żyć gracza
+                level = 1;                                  //numer planszy
+                powerShotAmmo = 5;                          //amunicja broni specjalnej
+                playerLaserType = 1;                        //typ lasera gracza (Panie Areczku, playerLaserType=3 jest dla developerów. Dla pana jest playerLaserType=1)
+                randomDropChance = 2;                       //szansa na drop bonusu z przeciwnika (0-100%)
+                scoreForEnemy = 100                         //punkty za zestrzelenie wroga
+                enemyLaserType = 1
+                maxEnemyShotDelta = 15000
+                enemyShotDelta = 0
+                minEnemyShotDelta = 10000
+                //i restart gry
+                this.scene.restart()
+            }
         }
     }
 }
@@ -1369,4 +1423,3 @@ var config = {
     scene: [MainMenu, GamePlay, PauseScene, StoreScene]
 }
 var game = new Phaser.Game(config);
-
