@@ -20,8 +20,9 @@ var canPause = true;                            //czy można zapauzować grę
 var powrotzesklepu=false    
 var isInShop=false                              //zmienna czy jest w sklepie
 var levelRestartTimer=0                         //timer, ile czasu po końcu poziomu ma się załadować następny
-
-
+var respawnTimer = 0
+var spawnProtectionTimer=0
+var przesunYO = 0
 //input
 var startButton;                                //przycisk startu gry (tu ENTER)
 var pauseButton;                                //przycisk startu gry (tu ENTER)
@@ -43,6 +44,7 @@ var pauseSceneText                              //tekst podczas pauzy
 var coKupionoText                               //nazwa kupionego przedmiotu
 var path                                        //ścieżka / droga po której poruszają się przeciwnicy na danym poziomie
 var levelFinishText1, levelFinishText2          //tekst po zakończeniu poziomu
+var isAlive=true
 
 //wartości zmiennych statku gracza
 var shipVelocity = 500;                         //prędkość poruszania się statku (default: 100, debug: 500)
@@ -60,9 +62,16 @@ var powerShotAmmo = 5;                          //amunicja broni specjalnej
 var playerLaserType = 1;                        //typ lasera gracza (Panie Areczku, playerLaserType=3 jest dla developerów. Dla pana jest playerLaserType=1)
 var randomDropChance = 2;                       //szansa na drop bonusu z przeciwnika (0-100%)
 var scoreForEnemy = 100                         //punkty za zestrzelenie wroga
+var enemyLaserType = 1
+var maxEnemyShotDelta = 15000
+var enemyShotDelta = 0
+var minEnemyShotDelta = 10000
+var enemyShotTimer = 0
+var enemyCanShoot = true
 
-//grupy obiektów w czasie gry
+var gameOver = false //grupy obiektów w czasie gry
 var enemies                                     //zbiór/grupa przeciwników
+var enemyBullets
 var bullets                                     //zbiór/grupa strzałów podstawowych gracza
 var powerShots                                  //zbiór/grupa strzałów bonusowych
 var bonusses                                    //zbiór/grupa bonusów wypadających z przeciwnika
@@ -178,6 +187,61 @@ class Bullets extends Phaser.Physics.Arcade.Group {
                 bullet.fireWBok(x - 20, y, 0); //to go wystrzel w określonym miejscu
             }
         }
+    }
+}
+
+//klasa pojedynczego pocisku
+class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene, x, y) {
+        super(scene, x, y, 'enemyBullet'); //konstruktor ze współrzędnymi i teksturą strzału
+    }
+
+    fire(x, y) {
+        this.setActive(true);       //ustawienie pocisku na aktywny i widoczny
+        this.setVisible(true);
+        this.body.reset(x, y);
+        this.body.setEnable(true)
+        this.setVelocityY(500);   //ustawienie prędkości lotu pocisku
+        this.angle = 0;             //ustawienie pochylenia pocisku na 0 stopni
+    }
+
+
+    preUpdate(time, delta) {
+        super.preUpdate(time, delta);
+
+        if (this.y >= 932) //kiedy pocisk wyleci poza planszę to ustaw na niewidoczny i nieaktywny
+        {
+            this.setActive(false);
+            this.setVisible(false);
+        }
+    }
+}
+
+//klasa kolekcji pocisków gracza
+class EnemyBullets extends Phaser.Physics.Arcade.Group {
+    constructor(scene) {
+        super(scene.physics.world, scene);
+
+        this.createMultiple({
+            frameQuantity: 70,
+            key: 'enemyBullet',
+            active: false,
+            visible: false,
+            classType: EnemyBullet
+        });
+    }
+
+
+    fireBullet(x, y) {
+        enemyShotTimer = 0; //czas od ostatniego strzału = 0
+
+        //jeżeli gracz ma pojedynczy laser
+
+            let bullet = this.getFirstDead(false); //pobierz pierwszy wolny (nie będący na planszy / niewystrzelony) pocisk
+            if (bullet) //jeśli taki istnieje
+            {
+                bullet.fire(x, y); //to go wystrzel w określonym miejscu
+            }
     }
 }
 
@@ -316,12 +380,14 @@ class PauseScene extends Phaser.Scene{
     create(){
         pauseBackground = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
         pauseSceneText = this.add.text(game.config.width / 2, game.config.height / 2, 'Press "P" to continue!', { font: "30px PressStart2P" }).setOrigin(0.5);;
+        pauseBackground.tilePositionY += przesunYO
     }
     update(time, delta)
     {
         timeFromTextBlink2 += delta;
         pauseBackground.tilePositionY -= 0.1; //przesuwanie tła do dołu
-
+        background.tilePositionY -= 0.1;
+        przesunYO = pauseBackground.tilePositionY
         //mryganie napisu
         if (timeFromTextBlink2 >= textBlinkingDelta) {
             timeFromTextBlink2 = 0;
@@ -351,7 +417,7 @@ class StoreScene extends Phaser.Scene{
     create(){
         storeBackground = this.add.tileSprite(config.width / 2, config.height / 2, 0, 0, 'background1');
         isInShop=true
-
+        storeBackground.tilePositionY += przesunYO
         //item nr 1 w sklepie
         storePosition1 = this.add.tileSprite(100, 110, 0, 0, 'singleLaserPowerUp');                                                     //ustawienie miniaturki
         stPos1Text = this.add.text(200, 100, "Kup Single Laser", { font: '24px PressStart2P', fill: '#ffffff' }).setOrigin(0)           //ustawienie nazwy
@@ -405,6 +471,8 @@ class StoreScene extends Phaser.Scene{
     }
     update(time, delta){
         storeBackground.tilePositionY -= 0.1;
+        background.tilePositionY -= 0.1;
+        przesunYO = storeBackground.tilePositionY
         //logika zakupów i ich wpływ na statek
         if(this.input.keyboard.checkDown(kup1, 100) && isInShop && score >= 1000)
         {
@@ -412,8 +480,6 @@ class StoreScene extends Phaser.Scene{
                 maxAmmo++;
             }
             else playerLaserType = 1;
-            // bullets = new Bullets(GamePlay)
-            // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
             score-=1000
             coKupionoText.setText('Kupiono Single Laser');
             scoreText.setText("Score: " + score)
@@ -426,8 +492,6 @@ class StoreScene extends Phaser.Scene{
             coKupionoText.setText('Kupiono Double Laser');
             scoreText.setText("Score: " + score)
             scoreText2.setText("Score: " + score)
-            // bullets = new Bullets(GamePlay)
-            // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
         }
         if(this.input.keyboard.checkDown(kup3, 100) && isInShop&& score >= 5000)
         {
@@ -437,16 +501,12 @@ class StoreScene extends Phaser.Scene{
             coKupionoText.setText('Kupiono Triple Laser');
             scoreText.setText("Score: " + score)
             scoreText2.setText("Score: " + score)
-            // bullets = new Bullets(GamePlay)
-            // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
         }
         if(this.input.keyboard.checkDown(kup4, 100) && isInShop&& score >= 2000)
         {
             if (maxAmmo < 97)
             {
                 maxAmmo += playerLaserType;
-                // bullets = new Bullets(GamePlay)
-                // GamePlay.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
                 score-=2000
                 coKupionoText.setText('Kupiono Extra Ammo');
                 scoreText.setText("Score: " + score)
@@ -555,9 +615,9 @@ class GamePlay extends Phaser.Scene {
             frameHeight: 34,
         });
 
-        this.load.spritesheet('playerExplosion', 'assets/playerExplosion.png', {
-            frameWidth: 34,
-            frameHeight: 34
+        this.load.spritesheet('playerExplosion', 'assets/playerExplosions.png', {
+            frameWidth: 110,
+            frameHeight: 110
         });
         this.load.spritesheet('powerShotjee', 'assets/powerShot.png', {
             frameWidth: 65,
@@ -567,6 +627,7 @@ class GamePlay extends Phaser.Scene {
     }
 
     create() {
+        gameOver = false
         enemies = null;
         powrotzesklepu=false;
         isInShop=false
@@ -591,7 +652,8 @@ class GamePlay extends Phaser.Scene {
             frames: this.anims.generateFrameNumbers(
                 'playerExplosion', { frames: [0, 1, 2, 3, 4] }),
             frameRate: 8,
-            repeat: 0
+            repeat: 0,
+            origin: 0.5
         });
 
         this.anims.create({
@@ -647,7 +709,7 @@ class GamePlay extends Phaser.Scene {
         var levelText = this.add.text(config.width * 0.005, config.height * 0.965, '', { font: '24px PressStart2P', fill: '#00ff00' });
         levelText.setOrigin(0);
         levelText.setText('LVL: ' + level);
-
+        background.tilePositionY += przesunYO
         //wczytanie fontu z serduszkami
         const heartFontConfig = {
             image: 'heartFont', //nazwa fontu
@@ -821,12 +883,15 @@ class GamePlay extends Phaser.Scene {
 
         //inicjowanie grup/zbiorów/kolekcji itemów
         bullets = new Bullets(this);
+        enemyBullets = new EnemyBullets(this);
         bonusses = new Bonusses(this);
         powerShots = new PowerShots(this);
+        
         // game.debugShowBody(bullets)
         // game.debugShowBody(enemies)
 
         //implementacja kolizji
+        this.physics.add.overlap(ship, enemyBullets, bulletHitsPlayer, null, this);
         this.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
         this.physics.add.overlap(powerShots, enemies, powerShotHitsEnemy, null, this);
         this.physics.add.overlap(ship, bonusses, shipCollectsBonus, null, this);
@@ -834,7 +899,9 @@ class GamePlay extends Phaser.Scene {
     }
 
     update(time, delta) {
-        
+
+
+
         timeFromLastShot += delta;
         pauseTimer += delta;
         
@@ -917,6 +984,7 @@ class GamePlay extends Phaser.Scene {
 
         //przesuwanie tła i zerowanie prędkości statku gracza kiedy nie ma inputa
         background.tilePositionY -= 0.1;
+        przesunYO = background.tilePositionY
         stars2.tilePositionY -= 0.4;
         ship.body.velocity.x = 0;
 
@@ -939,7 +1007,8 @@ class GamePlay extends Phaser.Scene {
         if (!pauseButton.isDown) {canPause = false}
 
         //strzał główny
-        if (fireButton.isDown && timeFromLastShot >= shotDelta && canShoot) {
+        if (fireButton.isDown && timeFromLastShot >= shotDelta && canShoot && isAlive && !gameOver) {
+            console.log("STRZAŁ")
             bullets.fireBullet(ship.x, ship.y * 0.95);
             canShoot = false;
         }
@@ -951,8 +1020,49 @@ class GamePlay extends Phaser.Scene {
             canShootPowerShot = false;
         }
         if (!powerShotButton.isDown) { canShootPowerShot = true }
-    }
 
+        enemies.children.each(function(enemy)
+        {
+            enemyShotTimer += delta;
+            enemyShotDelta = Math.random()*maxEnemyShotDelta+minEnemyShotDelta
+        //     //strzał przeciwników
+            if (enemyShotTimer >= enemyShotDelta && enemyCanShoot) 
+            {
+                enemyShotTimer = 0
+                if(enemy.x != 450 && level%4!=0 && enemy.active)
+                {
+                    enemyBullets.fireBullet(enemy.x, enemy.y * 1.05);
+                }
+                else if(level%4==0 && enemy.active)
+                {
+                    enemyBullets.fireBullet(enemy.x, enemy.y * 1.05);
+                }
+                enemyCanShoot = false;
+            }
+            if (enemyShotTimer >= enemyShotDelta) 
+                { enemyCanShoot = true }
+        }, this);
+        //console.log("spawnProtectionTimer" + spawnProtectionTimer)
+        if(isAlive==true && spawnProtectionTimer > 0 && !gameOver){
+            spawnProtectionTimer-=delta
+            ship.body.setEnable(true)
+            ship.body.active = true
+            ship.visible=true
+        }
+        if(isAlive==true && spawnProtectionTimer == 0){
+        }
+        if(isAlive == false && respawnTimer < 1500){
+            respawnTimer+=delta
+            
+        }
+        if(isAlive == false && respawnTimer >= 1500){
+            respawnTimer=0
+            isAlive = true
+        }
+        if(lives<0){
+            gameOver = true
+        }
+    }
 }
 
 //logika zebrania bonusu przez statek gracza
@@ -1108,13 +1218,13 @@ function dropRandomBonus(tempX, tempY) {
 
 //logika trafienia przeciwnika zwykłym pociskiem
 function bulletHitsEnemy(bullet, enemy) {
-
+    
     //console.log("HIT")
     const temp = this.add.sprite(enemy.x, enemy.y)
     temp.anims.play('kill');
     bullets.killAndHide(bullet)
     bullet.body.setEnable(false)
-
+    
 
     let tempX, tempY;
     tempX = enemy.x
@@ -1129,6 +1239,52 @@ function bulletHitsEnemy(bullet, enemy) {
 
     dropRandomBonus(tempX, tempY)
 
+}
+
+//logika trafienia gracza pociskiem
+function bulletHitsPlayer(xd, enemyBullet) {
+    if(spawnProtectionTimer <= 0)
+    {
+        //console.log("HIT")
+        //ship.body.setVisible(false);
+        //ship.body.setActive(false);
+        //ship.body.setEnable(false);
+        ship.body.setEnable(false)
+        ship.body.active = false
+        ship.visible=false
+        console.log("ship.body.visible: " + ship.visible)
+        const temp = this.add.sprite(ship.x, ship.y)
+        temp.anims.play('playerKill');
+        
+        enemyBullet.body.setEnable(false)
+        // enemyBullet.body.setVisible(false)
+        enemyBullets.killAndHide(enemyBullet)
+
+        if(playerLaserType>1)
+        {
+            playerLaserType--
+            bullets = new Bullets(this)
+            this.physics.add.overlap(bullets, enemies, bulletHitsEnemy, null, this);
+        }
+
+        let tempX, tempY;
+        tempX = ship.x
+        tempY = ship.y
+
+        isAlive = false;
+
+        //  Increase the score
+        lives--;
+        if(lives>-1)
+            livesText2.setText(lives);
+        else {//tutaj end game screen
+            isAlive=false
+        }
+        spawnProtectionTimer = 3000
+    }
+        
+        
+    
 }
 
 //scena głównego menu
